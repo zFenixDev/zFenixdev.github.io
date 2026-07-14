@@ -1,5 +1,5 @@
 // ============================================================
-// app.js - Enrutamiento y lógica principal (con licencias)
+// app.js - Enrutamiento y lógica principal (CORREGIDO)
 // ============================================================
 
 var currentPlugin = null;
@@ -108,6 +108,7 @@ function renderPlugins() {
         return;
     }
 
+    // Recorremos todos los plugins
     for (var i = 0; i < plugins.length; i++) {
         var plugin = plugins[i];
         var card = document.createElement('div');
@@ -136,18 +137,21 @@ function renderPlugins() {
         grid.appendChild(card);
     }
 
-    // Asignar eventos a los botones "Ver más información"
+    // === CORRECCIÓN: Asignar eventos a los botones "Ver más información" ===
     var buttons = document.querySelectorAll('.btn-info');
     for (var j = 0; j < buttons.length; j++) {
         buttons[j].addEventListener('click', function(e) {
             e.stopPropagation();
+            // Obtenemos el ID del plugin desde el atributo data-plugin
             var pluginId = this.getAttribute('data-plugin');
             console.log('🔍 Click en plugin:', pluginId);
-            var plugins = window.PLUGINS_DATA || [];
-            for (var k = 0; k < plugins.length; k++) {
-                if (plugins[k].id === pluginId) {
-                    console.log('📦 Abriendo modal para:', plugins[k].name);
-                    openModal(plugins[k]);
+            // Buscamos el plugin en PLUGINS_DATA
+            var allPlugins = window.PLUGINS_DATA || [];
+            for (var k = 0; k < allPlugins.length; k++) {
+                if (allPlugins[k].id === pluginId) {
+                    console.log('📦 Abriendo modal para:', allPlugins[k].name);
+                    // Llamamos a openModal con el plugin encontrado
+                    openModal(allPlugins[k]);
                     break;
                 }
             }
@@ -189,9 +193,14 @@ function openModal(plugin) {
     modalStatus.textContent = st.label;
     modalFullDesc.textContent = plugin.fullDesc || plugin.shortDesc;
 
-    // Mostrar licencia si el usuario tiene el plugin y existe licencia
+    // Limpiar área de licencia anterior (si existe)
+    var existingLicense = document.querySelector('.license-display');
+    if (existingLicense) existingLicense.remove();
+
+    // Actualizar botón de descarga
     updateDownloadButton();
 
+    // Eventos para las versiones
     var chips = document.querySelectorAll('.version-chip');
     for (var c = 0; c < chips.length; c++) {
         chips[c].addEventListener('click', function() {
@@ -206,6 +215,7 @@ function openModal(plugin) {
         });
     }
 
+    // Mostrar el modal
     modalOverlay.classList.add('active');
     console.log('✅ Modal abierto.');
 }
@@ -228,7 +238,7 @@ function updateDownloadButton() {
 
     var hasAccess = false;
     if (!plugin.paid) {
-        hasAccess = true; // gratuito
+        hasAccess = true; // gratuito: siempre accesible
     } else {
         if (isLoggedIn && currentUser) {
             hasAccess = userHasPlugin(currentUser, plugin.id);
@@ -248,7 +258,6 @@ function updateDownloadButton() {
                 <span style="color:#8892b0; font-size:0.85rem;">🔑 Licencia: </span>
                 <span class="license-text" data-license="${license}" style="color:#a78bfa; font-weight:600; cursor:pointer; filter: blur(4px); transition: filter 0.3s;">Click para ver</span>
             `;
-            // Evento para revelar/ocultar licencia
             var span = licenseDiv.querySelector('.license-text');
             span.addEventListener('click', function() {
                 if (this.style.filter === 'blur(0px)') {
@@ -678,7 +687,6 @@ function openMyLicensesModal() {
         for (var pluginId in userData.licenses) {
             var license = userData.licenses[pluginId];
             var pluginName = pluginId;
-            // Buscar nombre del plugin
             var plugins = window.PLUGINS_DATA || [];
             for (var p = 0; p < plugins.length; p++) {
                 if (plugins[p].id === pluginId) {
