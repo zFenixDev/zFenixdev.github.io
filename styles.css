@@ -1032,3 +1032,118 @@ body {
         justify-content: center;
     }
 }
+/* ===== CHECKBOXES MODERNOS (para admin) ===== */
+.checkbox-group.modern-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    padding: 0.5rem 0;
+}
+
+.checkbox-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 60px;
+    padding: 0.4rem 1rem 0.4rem 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #b9c2dd;
+    font-size: 0.9rem;
+}
+
+.checkbox-card:hover {
+    background: rgba(167, 139, 250, 0.08);
+    border-color: rgba(167, 139, 250, 0.2);
+}
+
+.checkbox-card input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-card .checkmark {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #6d7a9e;
+    display: inline-block;
+    position: relative;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.checkbox-card input[type="checkbox"]:checked + .checkmark {
+    background: #a78bfa;
+    border-color: #a78bfa;
+}
+
+.checkbox-card input[type="checkbox"]:checked + .checkmark::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 6px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-card input[type="checkbox"]:checked ~ span {
+    color: #f0f2ff;
+}
+
+/* ===== BOTÓN GENERAR MEJORADO ===== */
+.btn-generate {
+    background: linear-gradient(135deg, #7b61ff, #6c52e6);
+    border: none;
+    padding: 0.9rem 1.5rem;
+    border-radius: 60px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(123, 97, 255, 0.3);
+}
+
+.btn-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(123, 97, 255, 0.5);
+}
+
+.btn-generate i {
+    font-size: 1.2rem;
+}
+
+/* ===== LICENCIA DISPLAY ===== */
+.license-display {
+    margin: 0.5rem 0 1rem 0;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.license-text {
+    color: #a78bfa;
+    font-weight: 600;
+    cursor: pointer;
+    filter: blur(4px);
+    transition: filter 0.3s, opacity 0.3s;
+}
+
+.license-text:hover {
+    opacity: 0.8;
+}
+
+.license-text.revealed {
+    filter: blur(0px);
+}
