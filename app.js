@@ -108,7 +108,6 @@ function renderPlugins() {
         return;
     }
 
-    // Recorremos todos los plugins
     for (var i = 0; i < plugins.length; i++) {
         var plugin = plugins[i];
         var card = document.createElement('div');
@@ -137,28 +136,28 @@ function renderPlugins() {
         grid.appendChild(card);
     }
 
-    // === CORRECCIÓN: Asignar eventos a los botones ===
-    // Eliminar listeners anteriores clonando y reemplazando los botones para evitar duplicados
+    // Asignar eventos a los botones "Ver más información"
+    // Usamos un enfoque más robusto: eliminar todos los listeners anteriores no es posible sin referencias,
+    // pero al clonar los botones nos aseguramos de que no tengan eventos antiguos.
     var buttons = document.querySelectorAll('.btn-info');
     for (var j = 0; j < buttons.length; j++) {
-        // Clonar y reemplazar para eliminar eventos antiguos
+        // Clonar para eliminar eventos anteriores
         var newBtn = buttons[j].cloneNode(true);
         buttons[j].parentNode.replaceChild(newBtn, buttons[j]);
-        // Asignar nuevo evento
         newBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             var pluginId = this.getAttribute('data-plugin');
             console.log('🔍 Click en plugin:', pluginId);
-            // Buscar el plugin en PLUGINS_DATA
             var allPlugins = window.PLUGINS_DATA || [];
             for (var k = 0; k < allPlugins.length; k++) {
                 if (allPlugins[k].id === pluginId) {
                     console.log('📦 Abriendo modal para:', allPlugins[k].name);
-                    // Cerrar cualquier modal abierto primero
-                    if (modalOverlay.classList.contains('active')) {
-                        closeModal();
-                    }
-                    openModal(allPlugins[k]);
+                    // Forzar cierre de cualquier modal abierto
+                    forceCloseAllModals();
+                    // Abrir el modal después de un breve delay para evitar conflictos
+                    setTimeout(function() {
+                        openModal(allPlugins[k]);
+                    }, 50);
                     break;
                 }
             }
@@ -169,16 +168,48 @@ function renderPlugins() {
     console.log('✅ Plugins renderizados correctamente.');
 }
 
-function openModal(plugin) {
-    console.log('🟢 openModal llamado para:', plugin.name);
-
-    // Si hay un modal abierto, lo cerramos primero para evitar conflictos
+// Función para forzar cierre de todos los modales
+function forceCloseAllModals() {
+    // Cerrar modal de plugins
     if (modalOverlay.classList.contains('active')) {
         closeModal();
     }
+    // Cerrar login
+    if (loginModalOverlay.classList.contains('active')) {
+        loginModalOverlay.classList.remove('active');
+    }
+    // Cerrar redeem
+    if (redeemModal.classList.contains('active')) {
+        redeemModal.classList.remove('active');
+    }
+    // Cerrar ticket
+    if (ticketModal.classList.contains('active')) {
+        ticketModal.classList.remove('active');
+    }
+    // Cerrar mis tickets
+    if (myTicketsModal.classList.contains('active')) {
+        myTicketsModal.classList.remove('active');
+    }
+    // Cerrar mis licencias
+    if (myLicensesModal.classList.contains('active')) {
+        myLicensesModal.classList.remove('active');
+    }
+}
+
+function openModal(plugin) {
+    console.log('🟢 openModal llamado para:', plugin.name);
+
+    // Si el modal ya está abierto y es el mismo plugin, no hacer nada
+    if (modalOverlay.classList.contains('active') && currentPlugin && currentPlugin.id === plugin.id) {
+        console.log('⚠️ El modal ya está abierto para este plugin.');
+        return;
+    }
+
+    // Forzar cierre de cualquier modal abierto (por si acaso)
+    forceCloseAllModals();
 
     // Resetear estado previo
-    currentPlugin = plugin;
+    currentPlugin = null;
     selectedVersion = null;
 
     // Configurar el modal
@@ -222,7 +253,7 @@ function openModal(plugin) {
     // Eventos para las versiones (limpiar anteriores)
     var chips = document.querySelectorAll('.version-chip');
     for (var c = 0; c < chips.length; c++) {
-        // Clonar y reemplazar para evitar duplicados
+        // Clonar para eliminar eventos anteriores
         var newChip = chips[c].cloneNode(true);
         chips[c].parentNode.replaceChild(newChip, chips[c]);
         newChip.addEventListener('click', function() {
@@ -236,6 +267,9 @@ function openModal(plugin) {
             updateDownloadButton();
         });
     }
+
+    // Asignar el plugin actual después de configurar todo
+    currentPlugin = plugin;
 
     // Mostrar el modal
     modalOverlay.classList.add('active');
@@ -689,6 +723,7 @@ function sendMyTicketReply(ticketId) {
     var result = addTicketMessage(ticketId, currentUser, text);
     if (result) {
         input.value = '';
+        // Recargar la lista de tickets
         openMyTicketsModal();
     }
 }
