@@ -1,5 +1,5 @@
 // ============================================================
-// app.js - Enrutamiento y lógica principal (CORREGIDO)
+// app.js - Enrutamiento y lógica principal (FINAL)
 // ============================================================
 
 var currentPlugin = null;
@@ -108,7 +108,6 @@ function renderPlugins() {
         return;
     }
 
-    // Recorremos todos los plugins
     for (var i = 0; i < plugins.length; i++) {
         var plugin = plugins[i];
         var card = document.createElement('div');
@@ -137,20 +136,15 @@ function renderPlugins() {
         grid.appendChild(card);
     }
 
-    // === CORRECCIÓN: Asignar eventos a los botones "Ver más información" ===
     var buttons = document.querySelectorAll('.btn-info');
     for (var j = 0; j < buttons.length; j++) {
         buttons[j].addEventListener('click', function(e) {
             e.stopPropagation();
-            // Obtenemos el ID del plugin desde el atributo data-plugin
             var pluginId = this.getAttribute('data-plugin');
             console.log('🔍 Click en plugin:', pluginId);
-            // Buscamos el plugin en PLUGINS_DATA
             var allPlugins = window.PLUGINS_DATA || [];
             for (var k = 0; k < allPlugins.length; k++) {
                 if (allPlugins[k].id === pluginId) {
-                    console.log('📦 Abriendo modal para:', allPlugins[k].name);
-                    // Llamamos a openModal con el plugin encontrado
                     openModal(allPlugins[k]);
                     break;
                 }
@@ -162,12 +156,22 @@ function renderPlugins() {
     console.log('✅ Plugins renderizados correctamente.');
 }
 
+// ============================================================
+// MODAL DEL PLUGIN - REWRITE COMPLETO
+// ============================================================
 function openModal(plugin) {
-    console.log('🟢 openModal llamado para:', plugin.name);
+    console.log('🟢 Abriendo modal para:', plugin.name, '| paid:', plugin.paid, '| status:', plugin.status);
     currentPlugin = plugin;
+
+    // Limpiar area de licencia previa
+    var oldLicense = document.querySelector('.license-display');
+    if (oldLicense) oldLicense.remove();
+
+    // Setear icono, título, descripción, etc.
     modalIcon.innerHTML = '<i class="fas ' + plugin.icon + '"></i>';
     modalTitle.textContent = plugin.name;
 
+    // Versiones
     var versionHtml = '';
     if (plugin.versions && plugin.versions.length > 0) {
         for (var v = 0; v < plugin.versions.length; v++) {
@@ -183,6 +187,7 @@ function openModal(plugin) {
     selectedVersion = (plugin.versions && plugin.versions.length > 0) ? plugin.versions[0] : null;
     modalVersionLabel.textContent = selectedVersion ? 'Versión ' + selectedVersion : 'Sin versiones';
 
+    // Estado
     var statusMap = {
         paid: { cls: 'paid', label: '🔒 Pago' },
         free: { cls: 'free', label: '✅ Gratis' },
@@ -193,14 +198,10 @@ function openModal(plugin) {
     modalStatus.textContent = st.label;
     modalFullDesc.textContent = plugin.fullDesc || plugin.shortDesc;
 
-    // Limpiar área de licencia anterior (si existe)
-    var existingLicense = document.querySelector('.license-display');
-    if (existingLicense) existingLicense.remove();
+    // Actualizar botón de descarga y licencia
+    updateDownloadAndLicense();
 
-    // Actualizar botón de descarga
-    updateDownloadButton();
-
-    // Eventos para las versiones
+    // Eventos de versiones
     var chips = document.querySelectorAll('.version-chip');
     for (var c = 0; c < chips.length; c++) {
         chips[c].addEventListener('click', function() {
@@ -211,71 +212,95 @@ function openModal(plugin) {
             this.classList.add('active');
             selectedVersion = this.getAttribute('data-version');
             modalVersionLabel.textContent = 'Versión ' + selectedVersion;
-            updateDownloadButton();
+            updateDownloadAndLicense();
         });
     }
 
-    // Mostrar el modal
     modalOverlay.classList.add('active');
     console.log('✅ Modal abierto.');
 }
 
-function updateDownloadButton() {
+function updateDownloadAndLicense() {
     if (!currentPlugin) return;
     var plugin = currentPlugin;
 
-    // Limpiar área de licencia anterior (si existe)
-    var existingLicense = document.querySelector('.license-display');
-    if (existingLicense) existingLicense.remove();
+    // Eliminar licencia vieja
+    var oldLicense = document.querySelector('.license-display');
+    if (oldLicense) oldLicense.remove();
 
-    // Si es desarrollo o no tiene versiones, deshabilitar
+    // Verificar si el usuario tiene el plugin (solo si está logueado)
+    var userOwnsPlugin = false;
+    if (isLoggedIn && currentUser) {
+        userOwnsPlugin = userHasPlugin(currentUser, plugin.id);
+    }
+    console.log('🔑 userOwnsPlugin:', userOwnsPlugin, 'paid:', plugin.paid, 'status:', plugin.status);
+
+    // Obtener licencia si aplica
+    var license = null;
+    if (userOwnsPlugin && plugin.paid) {
+        license = getUserLicense(currentUser, plugin.id);
+        console.log('📜 Licencia encontrada:', license);
+    }
+
+    // Si tiene licencia, mostrar el campo
+    if (license) {
+        var licenseDiv = document.createElement('div');
+        licenseDiv.className = 'license-display';
+        licenseDiv.innerHTML = `
+            <span style="color:#8892b0; font-size:0.85rem;">🔑 Licencia: </span>
+            <span class="license-text" data-license="${license}" style="color:#a78bfa; font-weight:600; cursor:pointer; filter: blur(4px); transition: filter 0.3s;">Click para ver</span>
+        `;
+        var span = licenseDiv.querySelector('.license-text');
+        span.addEventListener('click', function() {
+            if (this.style.filter === 'blur(0px)') {
+                this.style.filter = 'blur(4px)';
+                this.innerText = 'Click para ver';
+            } else {
+                this.style.filter = 'blur(0px)';
+                this.innerText = this.dataset.license;
+            }
+        });
+        // Insertar antes del botón de descarga
+        modalDownloadBtn.parentNode.insertBefore(licenseDiv, modalDownloadBtn);
+        console.log('✅ Licencia mostrada en el modal.');
+    }
+
+    // ===== BOTÓN DE DESCARGA =====
+    // Casos especiales: en desarrollo o sin versiones
     if (plugin.status === 'dev' || !plugin.versions || plugin.versions.length === 0) {
         modalDownloadBtn.disabled = true;
         modalDownloadBtn.innerHTML = '<i class="fas fa-code"></i> No disponible';
         modalDownloadBtn.className = 'modal-download-btn';
+        console.log('ℹ️ Plugin en desarrollo o sin versiones.');
         return;
     }
 
+    // Determinar acceso a descarga
     var hasAccess = false;
+    // Si es gratis, siempre accesible (si tiene enlace)
     if (!plugin.paid) {
-        hasAccess = true; // gratuito: siempre accesible
+        hasAccess = true;
+        console.log('🆓 Plugin gratuito, acceso concedido.');
     } else {
-        if (isLoggedIn && currentUser) {
-            hasAccess = userHasPlugin(currentUser, plugin.id);
+        // Si es de pago, solo si el usuario lo tiene
+        if (userOwnsPlugin) {
+            hasAccess = true;
+            console.log('✅ Usuario tiene el plugin, acceso concedido.');
+        } else {
+            hasAccess = false;
+            console.log('🔒 Usuario no tiene el plugin, acceso denegado.');
         }
     }
 
     var downloadUrl = getDownloadLink(plugin.id, selectedVersion);
     var hasDownload = !!downloadUrl;
-
-    // Mostrar licencia si el usuario tiene el plugin y es de pago
-    if (plugin.paid && isLoggedIn && currentUser && userHasPlugin(currentUser, plugin.id)) {
-        var license = getUserLicense(currentUser, plugin.id);
-        if (license) {
-            var licenseDiv = document.createElement('div');
-            licenseDiv.className = 'license-display';
-            licenseDiv.innerHTML = `
-                <span style="color:#8892b0; font-size:0.85rem;">🔑 Licencia: </span>
-                <span class="license-text" data-license="${license}" style="color:#a78bfa; font-weight:600; cursor:pointer; filter: blur(4px); transition: filter 0.3s;">Click para ver</span>
-            `;
-            var span = licenseDiv.querySelector('.license-text');
-            span.addEventListener('click', function() {
-                if (this.style.filter === 'blur(0px)') {
-                    this.style.filter = 'blur(4px)';
-                    this.innerText = 'Click para ver';
-                } else {
-                    this.style.filter = 'blur(0px)';
-                    this.innerText = this.dataset.license;
-                }
-            });
-            modalDownloadBtn.parentNode.insertBefore(licenseDiv, modalDownloadBtn);
-        }
-    }
+    console.log('📦 downloadUrl:', downloadUrl, 'hasDownload:', hasDownload);
 
     if (hasAccess && hasDownload) {
         modalDownloadBtn.disabled = false;
         modalDownloadBtn.innerHTML = '<i class="fas fa-download"></i> Descargar ' + plugin.name + ' ' + (selectedVersion || '');
         modalDownloadBtn.className = 'modal-download-btn';
+        // Clonar para evitar múltiples eventos
         var newBtn = modalDownloadBtn.cloneNode(true);
         modalDownloadBtn.parentNode.replaceChild(newBtn, modalDownloadBtn);
         newBtn.addEventListener('click', function(e) {
@@ -287,18 +312,22 @@ function updateDownloadButton() {
                 alert('⚠️ No hay enlace para esta versión.');
             }
         });
+        console.log('✅ Botón de descarga habilitado.');
     } else {
         modalDownloadBtn.disabled = true;
         if (!hasDownload) {
             modalDownloadBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Sin enlace disponible';
             modalDownloadBtn.className = 'modal-download-btn';
+            console.log('⚠️ Sin enlace de descarga.');
         } else if (!hasAccess) {
             if (!isLoggedIn) {
                 modalDownloadBtn.innerHTML = '<i class="fas fa-lock"></i> Inicia sesión para comprar';
                 modalDownloadBtn.className = 'modal-download-btn locked';
+                console.log('🔒 Usuario no logueado.');
             } else {
                 modalDownloadBtn.innerHTML = '<i class="fas fa-lock"></i> No tienes este plugin';
                 modalDownloadBtn.className = 'modal-download-btn locked';
+                console.log('🔒 Usuario no tiene este plugin.');
             }
         }
     }
@@ -342,7 +371,7 @@ function updateUI() {
     }
 
     if (currentPlugin && modalOverlay.classList.contains('active')) {
-        updateDownloadButton();
+        updateDownloadAndLicense();
     }
 
     if (pagePlugins.style.display !== 'none') {
@@ -537,7 +566,7 @@ function handleRedeem() {
         redeemKey.value = '';
         updateUI();
         if (currentPlugin && modalOverlay.classList.contains('active')) {
-            updateDownloadButton();
+            updateDownloadAndLicense();
         }
     } else {
         redeemError.textContent = result.error;
@@ -584,7 +613,7 @@ function handleCreateTicket() {
 }
 
 // ============================================================
-// MIS TICKETS (VER Y RESPONDER)
+// MIS TICKETS
 // ============================================================
 function openMyTicketsModal() {
     var tickets = getTicketsByUser(currentUser);
@@ -794,7 +823,6 @@ myTicketsModal.addEventListener('click', function(e) {
     if (e.target === myTicketsModal) myTicketsModal.classList.remove('active');
 });
 
-// Mis Licencias
 dropdownMyLicenses.addEventListener('click', function() {
     closeDropdown();
     if (!isLoggedIn || !currentUser) {
