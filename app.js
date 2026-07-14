@@ -67,6 +67,12 @@ var myTicketsModalClose = document.getElementById('myTicketsModalClose');
 var myTicketsList = document.getElementById('myTicketsList');
 var dropdownMyTickets = document.getElementById('dropdownMyTickets');
 
+// My Licenses modal
+var myLicensesModal = document.getElementById('myLicensesModal');
+var myLicensesModalClose = document.getElementById('myLicensesModalClose');
+var myLicensesList = document.getElementById('myLicensesList');
+var dropdownMyLicenses = document.getElementById('dropdownMyLicenses');
+
 // Dropdown
 var dropdownSettings = document.getElementById('dropdownSettings');
 var dropdownRedeem = document.getElementById('dropdownRedeem');
@@ -130,6 +136,7 @@ function renderPlugins() {
         grid.appendChild(card);
     }
 
+    // Asignar eventos a los botones "Ver más información"
     var buttons = document.querySelectorAll('.btn-info');
     for (var j = 0; j < buttons.length; j++) {
         buttons[j].addEventListener('click', function(e) {
@@ -211,6 +218,7 @@ function updateDownloadButton() {
     var existingLicense = document.querySelector('.license-display');
     if (existingLicense) existingLicense.remove();
 
+    // Si es desarrollo o no tiene versiones, deshabilitar
     if (plugin.status === 'dev' || !plugin.versions || plugin.versions.length === 0) {
         modalDownloadBtn.disabled = true;
         modalDownloadBtn.innerHTML = '<i class="fas fa-code"></i> No disponible';
@@ -220,7 +228,7 @@ function updateDownloadButton() {
 
     var hasAccess = false;
     if (!plugin.paid) {
-        hasAccess = true;
+        hasAccess = true; // gratuito
     } else {
         if (isLoggedIn && currentUser) {
             hasAccess = userHasPlugin(currentUser, plugin.id);
@@ -236,15 +244,12 @@ function updateDownloadButton() {
         if (license) {
             var licenseDiv = document.createElement('div');
             licenseDiv.className = 'license-display';
-            licenseDiv.style.cssText = 'margin: 0.5rem 0 1rem 0; padding: 0.5rem; background: rgba(255,255,255,0.03); border-radius: 0.5rem; text-align: center;';
             licenseDiv.innerHTML = `
                 <span style="color:#8892b0; font-size:0.85rem;">🔑 Licencia: </span>
-                <span class="license-text" style="color:#a78bfa; font-weight:600; cursor:pointer; filter: blur(4px); transition: filter 0.3s;" onclick="this.style.filter='blur(0px)'; this.innerText=this.dataset.license;">Click para ver</span>
-                <span style="display:none;" class="license-hidden" data-license="${license}"></span>
+                <span class="license-text" data-license="${license}" style="color:#a78bfa; font-weight:600; cursor:pointer; filter: blur(4px); transition: filter 0.3s;">Click para ver</span>
             `;
-            // Mejorar: al hacer clic, revelar licencia y cambiar texto
+            // Evento para revelar/ocultar licencia
             var span = licenseDiv.querySelector('.license-text');
-            span.dataset.license = license;
             span.addEventListener('click', function() {
                 if (this.style.filter === 'blur(0px)') {
                     this.style.filter = 'blur(4px)';
@@ -254,7 +259,6 @@ function updateDownloadButton() {
                     this.innerText = this.dataset.license;
                 }
             });
-            // Insertar antes del botón de descarga
             modalDownloadBtn.parentNode.insertBefore(licenseDiv, modalDownloadBtn);
         }
     }
@@ -317,6 +321,7 @@ function updateUI() {
         }
         dropdownSupport.style.display = 'flex';
         dropdownMyTickets.style.display = 'flex';
+        dropdownMyLicenses.style.display = 'flex';
     } else {
         userStatusText.textContent = 'Invitado';
         statusDot.className = 'status-dot offline';
@@ -324,6 +329,7 @@ function updateUI() {
         dropdownAdmin.style.display = 'none';
         dropdownSupport.style.display = 'none';
         dropdownMyTickets.style.display = 'none';
+        dropdownMyLicenses.style.display = 'none';
     }
 
     if (currentPlugin && modalOverlay.classList.contains('active')) {
@@ -660,6 +666,40 @@ function reopenMyTicket(ticketId) {
 }
 
 // ============================================================
+// MIS LICENCIAS
+// ============================================================
+function openMyLicensesModal() {
+    var users = loadUsers();
+    var userData = users[currentUser];
+    if (!userData || !userData.licenses || Object.keys(userData.licenses).length === 0) {
+        myLicensesList.innerHTML = '<p style="color:#8892b0; text-align:center; padding:2rem;">No tienes licencias asignadas.</p>';
+    } else {
+        var html = '<table class="admin-table"><thead><tr><th>Plugin</th><th>Licencia</th></tr></thead><tbody>';
+        for (var pluginId in userData.licenses) {
+            var license = userData.licenses[pluginId];
+            var pluginName = pluginId;
+            // Buscar nombre del plugin
+            var plugins = window.PLUGINS_DATA || [];
+            for (var p = 0; p < plugins.length; p++) {
+                if (plugins[p].id === pluginId) {
+                    pluginName = plugins[p].name;
+                    break;
+                }
+            }
+            html += `
+                <tr>
+                    <td><strong>${pluginName}</strong> (${pluginId})</td>
+                    <td><code style="background:rgba(255,255,255,0.04);padding:0.2rem 0.6rem;border-radius:4px;">${license}</code></td>
+                </tr>
+            `;
+        }
+        html += '</tbody></table>';
+        myLicensesList.innerHTML = html;
+    }
+    myLicensesModal.classList.add('active');
+}
+
+// ============================================================
 // DROPDOWN
 // ============================================================
 function toggleDropdown(e) {
@@ -744,6 +784,22 @@ myTicketsModalClose.addEventListener('click', function() {
 });
 myTicketsModal.addEventListener('click', function(e) {
     if (e.target === myTicketsModal) myTicketsModal.classList.remove('active');
+});
+
+// Mis Licencias
+dropdownMyLicenses.addEventListener('click', function() {
+    closeDropdown();
+    if (!isLoggedIn || !currentUser) {
+        alert('Debes iniciar sesión para ver tus licencias.');
+        return;
+    }
+    openMyLicensesModal();
+});
+myLicensesModalClose.addEventListener('click', function() {
+    myLicensesModal.classList.remove('active');
+});
+myLicensesModal.addEventListener('click', function(e) {
+    if (e.target === myLicensesModal) myLicensesModal.classList.remove('active');
 });
 
 dropdownAdmin.addEventListener('click', function() {
