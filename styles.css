@@ -1147,3 +1147,99 @@ body {
 .license-text.revealed {
     filter: blur(0px);
 }
+/* ===== GESTIÓN DE CUENTAS (ADMIN) ===== */
+.account-search {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+.account-search input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 60px;
+    padding: 0.7rem 1.2rem;
+    color: #f0f2ff;
+    font-size: 1rem;
+    outline: none;
+    transition: 0.2s;
+}
+.account-search input:focus {
+    border-color: #a78bfa;
+}
+.account-search .btn-secondary {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.7rem 1.2rem;
+    border-radius: 60px;
+    color: #c8d0e6;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.account-search .btn-secondary:hover {
+    background: rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.3);
+}
+
+.account-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.account-result-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.6rem 1rem;
+    border-radius: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.account-result-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(167, 139, 250, 0.2);
+}
+
+#accountDetailView {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+}
+#accountDetailView .plugin-checkbox {
+    margin-bottom: 0.2rem;
+}
+#accountDetailView .btn-primary {
+    background: linear-gradient(135deg, #7b61ff, #6c52e6);
+    border: none;
+    border-radius: 60px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+#accountDetailView .btn-primary:hover {
+    transform: scale(1.02);
+}
+#accountDetailView .btn-danger {
+    background: rgba(248, 113, 113, 0.15);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: 60px;
+    color: #f87171;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+#accountDetailView .btn-danger:hover {
+    background: rgba(248, 113, 113, 0.25);
+}
