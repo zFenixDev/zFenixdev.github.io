@@ -1243,3 +1243,34 @@ body {
 #accountDetailView .btn-danger:hover {
     background: rgba(248, 113, 113, 0.25);
 }
+/* ===== NUEVOS ESTILOS PARA GESTIÓN DE CUENTAS ===== */
+#adminAccountList {
+    margin-top: 0.5rem;
+}
+#accountDetail {
+    margin-top: 1rem;
+}
+#accountDetail .btn-primary {
+    background: linear-gradient(135deg, #7b61ff, #6c52e6);
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 60px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+#accountDetail .btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(123, 97, 255, 0.3);
+}
+#accountDetail label {
+    transition: all 0.2s;
+}
+#accountDetail label:hover {
+    background: rgba(167, 139, 250, 0.1);
+}
