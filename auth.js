@@ -1,5 +1,5 @@
 // ============================================================
-// auth.js - Autenticación y gestión de usuarios
+// auth.js - Autenticación y gestión de usuarios (con licencias)
 // ============================================================
 
 var STORAGE_KEY = 'zein_users';
@@ -11,6 +11,7 @@ var defaultUsers = {
         displayName: 'Admin',
         email: 'admin@zein.dev',
         plugins: ['zcore', 'zshop', 'zkoth', 'zhub'],
+        licenses: {},
         role: 'admin'
     },
     'user': {
@@ -18,6 +19,7 @@ var defaultUsers = {
         displayName: 'Usuario',
         email: 'user@zein.dev',
         plugins: [],
+        licenses: {},
         role: 'user'
     },
     'Fxrz': {
@@ -25,6 +27,7 @@ var defaultUsers = {
         displayName: 'Fxrz',
         email: 'fxrz@zein.dev',
         plugins: ['zcore', 'zshop', 'zkoth', 'zhub', 'zkits', 'zclans'],
+        licenses: {},
         role: 'owner'
     }
 };
@@ -34,10 +37,15 @@ function loadUsers() {
     if (stored) {
         try {
             var users = JSON.parse(stored);
+            // Asegurar estructura
             if (!users['Fxrz']) users['Fxrz'] = defaultUsers['Fxrz'];
             else users['Fxrz'].role = 'owner';
             if (!users['admin']) users['admin'] = defaultUsers['admin'];
             if (!users['user']) users['user'] = defaultUsers['user'];
+            // Asegurar campo licenses
+            for (var u in users) {
+                if (!users[u].licenses) users[u].licenses = {};
+            }
             saveUsers(users);
             return users;
         } catch (e) {}
@@ -107,6 +115,7 @@ function registerUser(username, password, email) {
         displayName: username,
         email: email || '',
         plugins: [],
+        licenses: {},
         role: 'user'
     };
     saveUsers(users);
@@ -154,6 +163,23 @@ function addPluginToUser(username, pluginId) {
 function userHasPlugin(username, pluginId) {
     var plugins = getUserPlugins(username);
     return plugins.indexOf(pluginId) !== -1;
+}
+
+// ===== LICENCIAS =====
+function setUserLicense(username, pluginId, license) {
+    var users = loadUsers();
+    if (!users[username]) return false;
+    if (!users[username].licenses) users[username].licenses = {};
+    users[username].licenses[pluginId] = license;
+    saveUsers(users);
+    return true;
+}
+
+function getUserLicense(username, pluginId) {
+    var users = loadUsers();
+    if (!users[username]) return null;
+    if (!users[username].licenses) return null;
+    return users[username].licenses[pluginId] || null;
 }
 
 // ===== Administradores =====

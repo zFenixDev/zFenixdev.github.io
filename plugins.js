@@ -72,6 +72,17 @@ window.PLUGINS_DATA = [
         paid: true,
         status: 'paid',
         versions: ['1.0.0']
+    },
+    // ===== NUEVO: zPrefixs (en desarrollo) =====
+    {
+        id: 'zprefixs',
+        name: 'zPrefixs',
+        icon: 'fa-tag',
+        shortDesc: 'Sistema de prefijos y rangos (en desarrollo).',
+        fullDesc: 'zPrefixs permitirá gestionar prefijos personalizados para jugadores, con soporte para rangos, colores y animaciones. Actualmente en fase de desarrollo, no disponible para descarga.',
+        paid: false,
+        status: 'dev',
+        versions: []
     }
 ];
 
@@ -95,5 +106,6 @@ window.DOWNLOADS_DATA = {
     'zapi': {},
     'zhub': {
         '1.0.0': 'https://cdn.zein.dev/plugins/zhub-1.0.0.jar'
-    }
+    },
+    'zprefixs': {} // Sin enlaces de descarga por estar en desarrollo
 };

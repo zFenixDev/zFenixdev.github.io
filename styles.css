@@ -510,6 +510,28 @@ body {
     color: #f0f2ff;
 }
 
+/* LICENCIA */
+.license-display {
+    margin: 0.5rem 0 1rem 0;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0.5rem;
+    text-align: center;
+}
+.license-text {
+    color: #a78bfa;
+    font-weight: 600;
+    cursor: pointer;
+    filter: blur(4px);
+    transition: filter 0.3s, opacity 0.3s;
+}
+.license-text:hover {
+    opacity: 0.8;
+}
+.license-text.revealed {
+    filter: blur(0px);
+}
+
 /* BOTONES PELIGROSO/SECUNDARIO */
 .btn-danger {
     background: rgba(248, 113, 113, 0.15);

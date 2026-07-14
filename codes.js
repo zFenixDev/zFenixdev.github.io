@@ -1,5 +1,5 @@
 // ============================================================
-// codes.js - Sistema de códigos de canje con usos
+// codes.js - Sistema de códigos de canje con usos y licencias
 // ============================================================
 
 var CODES_KEY = 'zein_codes';
@@ -29,7 +29,7 @@ function generateCode(service) {
     return parts.join('-');
 }
 
-function createRedeemCode(service, customCode, uses) {
+function createRedeemCode(service, customCode, uses, license) {
     var plugin = window.PLUGINS_DATA.find(function(p) { return p.id === service; });
     if (!plugin) return { success: false, error: '❌ Servicio no válido' };
     if (!plugin.paid) return { success: false, error: '❌ El servicio es gratuito' };
@@ -49,6 +49,7 @@ function createRedeemCode(service, customCode, uses) {
         usedBy: null,
         uses: usesNum,
         usedCount: 0,
+        license: license || '',   // Licencia asociada al código
         adminGrant: false,
         adminDuration: null,
         createdAt: Date.now()
@@ -107,12 +108,17 @@ function redeemCode(username, code) {
         if (!added) return { success: false, error: '❌ Error al agregar el plugin' };
     }
 
+    // Guardar licencia si existe
+    if (found.license && typeof setUserLicense === 'function') {
+        setUserLicense(username, found.service, found.license);
+    }
+
     if (found.adminGrant && typeof setUserRole === 'function') {
         setUserRole(username, 'admin');
     }
 
     var usesLeft = found.uses === -1 ? Infinity : found.uses - found.usedCount;
-    return { success: true, service: found.service, usesLeft: usesLeft };
+    return { success: true, service: found.service, usesLeft: usesLeft, license: found.license || null };
 }
 
 // ============================================================
@@ -124,12 +130,12 @@ window.redeemcode = function() {
 
     if (!cmd) {
         console.log('📦 Comandos redeemcode:');
-        console.log('  redeemcode create <service> [usos]  - Genera un código con usos (ej: 5)');
+        console.log('  redeemcode create <service> [usos] [licencia]  - Genera un código con usos y licencia');
         console.log('  redeemcode list                     - Muestra todos los códigos');
         console.log('  redeemcode delete <code>            - Elimina un código');
         console.log('');
         console.log('Ejemplos:');
-        console.log('  redeemcode create zCore 5');
+        console.log('  redeemcode create zCore 5 "LIC-123"');
         console.log('  redeemcode list');
         return;
     }
@@ -137,15 +143,17 @@ window.redeemcode = function() {
     if (cmd === 'create') {
         var service = args[1];
         var usesArg = parseInt(args[2]) || -1;
+        var licenseArg = args[3] || '';
         if (!service) {
-            console.log('❌ Especifica el servicio: redeemcode create zCore 5');
+            console.log('❌ Especifica el servicio: redeemcode create zCore 5 "LIC-123"');
             return;
         }
-        var result = createRedeemCode(service, null, usesArg);
+        var result = createRedeemCode(service, null, usesArg, licenseArg);
         if (result.success) {
             console.log('✅ Código creado:', result.code);
             console.log('   Servicio:', service);
             console.log('   Usos:', usesArg === -1 ? 'Infinitos' : usesArg);
+            if (licenseArg) console.log('   Licencia:', licenseArg);
         } else {
             console.log(result.error);
         }
@@ -159,15 +167,16 @@ window.redeemcode = function() {
             return;
         }
         console.log('📋 Lista de códigos:');
-        console.log('   Código               | Servicio | Usos | Usados | Admin');
-        console.log('   -----------------------------------------------------------');
+        console.log('   Código               | Servicio | Usos | Usados | Admin | Licencia');
+        console.log('   ------------------------------------------------------------------');
         for (var i = 0; i < codes.length; i++) {
             var c = codes[i];
             var usos = c.uses === -1 ? '∞' : c.uses;
             var usados = c.usedCount || 0;
             var admin = c.adminGrant ? '✅' : '❌';
+            var lic = c.license || '-';
             var servicePad = (c.service || '').padEnd(8);
-            console.log('   ' + c.code + ' | ' + servicePad + ' | ' + usos.padEnd(4) + ' | ' + usados.padEnd(6) + ' | ' + admin);
+            console.log('   ' + c.code + ' | ' + servicePad + ' | ' + usos.padEnd(4) + ' | ' + usados.padEnd(6) + ' | ' + admin + ' | ' + lic);
         }
         return;
     }

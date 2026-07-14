@@ -1,5 +1,5 @@
 // ============================================================
-// admin.js - Panel de administración
+// admin.js - Panel de administración (con licencias)
 // ============================================================
 
 var adminContainer = document.getElementById('pageAdmin');
@@ -76,6 +76,10 @@ function renderAdminPage() {
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Licencia (opcional)</label>
+                        <input type="text" id="adminLicenseInput" placeholder="Ej: LIC-2024-ABCD-1234">
+                    </div>
+                    <div class="form-group">
                         <label>Permisos (Administrador)</label>
                         <div class="checkbox-group">
                             <label>
@@ -143,6 +147,7 @@ function handleAdminCreateCode() {
     var grantAdmin = document.getElementById('adminGrantAdmin').checked;
     var duration = document.getElementById('adminPermissionDuration').value;
     var uses = document.getElementById('adminUsesSelect').value;
+    var license = document.getElementById('adminLicenseInput').value.trim();
     var messageEl = document.getElementById('adminCreateMessage');
 
     if (pluginCheckboxes.length === 0) {
@@ -192,7 +197,7 @@ function handleAdminCreateCode() {
         var plugin = window.PLUGINS_DATA.find(function(p) { return p.id === service; });
         if (!plugin || !plugin.paid) continue;
 
-        var result = createRedeemCode(service, code, usesNum);
+        var result = createRedeemCode(service, code, usesNum, license);
         if (result.success) {
             codesCreated.push(service);
         } else {
@@ -202,7 +207,9 @@ function handleAdminCreateCode() {
 
     if (allSuccess && codesCreated.length > 0) {
         messageEl.innerHTML = '<span style="color:#4ade80;">✅ Código creado: <strong>' + code + '</strong> para ' + codesCreated.join(', ') +
-            ' con ' + (usesNum === -1 ? '∞ usos' : usesNum + ' usos') + '</span>';
+            ' con ' + (usesNum === -1 ? '∞ usos' : usesNum + ' usos') +
+            (license ? ' y licencia: <strong>' + license + '</strong>' : '') +
+            '</span>';
         if (grantAdmin) {
             var codes = loadCodes();
             for (var k = 0; k < codes.length; k++) {
@@ -219,6 +226,7 @@ function handleAdminCreateCode() {
         document.getElementById('adminManualCode').value = '';
         document.getElementById('adminGrantAdmin').checked = false;
         document.getElementById('adminPermissionDurationGroup').style.display = 'none';
+        document.getElementById('adminLicenseInput').value = '';
         renderAdminCodeList();
         renderAdminUserList();
     } else {
@@ -234,7 +242,7 @@ function renderAdminCodeList() {
         return;
     }
 
-    var html = '<table class="admin-table"><thead><tr><th>Código</th><th>Servicio</th><th>Usado</th><th>Usado por</th><th>Acciones</th></tr></thead><tbody>';
+    var html = '<table class="admin-table"><thead><tr><th>Código</th><th>Servicio</th><th>Licencia</th><th>Usado</th><th>Usado por</th><th>Acciones</th></tr></thead><tbody>';
     for (var i = 0; i < codes.length; i++) {
         var c = codes[i];
         var usado = c.used ? '✅ Sí' : '❌ No';
@@ -243,6 +251,7 @@ function renderAdminCodeList() {
             <tr>
                 <td><code>${c.code}</code></td>
                 <td>${c.service}</td>
+                <td>${c.license || '-'}</td>
                 <td>${usado}</td>
                 <td>${usadoPor}</td>
                 <td class="actions">

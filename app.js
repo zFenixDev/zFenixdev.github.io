@@ -1,5 +1,5 @@
 // ============================================================
-// app.js - Enrutamiento y lógica principal (CORREGIDO)
+// app.js - Enrutamiento y lógica principal (con licencias)
 // ============================================================
 
 var currentPlugin = null;
@@ -130,7 +130,6 @@ function renderPlugins() {
         grid.appendChild(card);
     }
 
-    // Asignar eventos a los botones "Ver más información"
     var buttons = document.querySelectorAll('.btn-info');
     for (var j = 0; j < buttons.length; j++) {
         buttons[j].addEventListener('click', function(e) {
@@ -183,6 +182,7 @@ function openModal(plugin) {
     modalStatus.textContent = st.label;
     modalFullDesc.textContent = plugin.fullDesc || plugin.shortDesc;
 
+    // Mostrar licencia si el usuario tiene el plugin y existe licencia
     updateDownloadButton();
 
     var chips = document.querySelectorAll('.version-chip');
@@ -207,6 +207,10 @@ function updateDownloadButton() {
     if (!currentPlugin) return;
     var plugin = currentPlugin;
 
+    // Limpiar área de licencia anterior (si existe)
+    var existingLicense = document.querySelector('.license-display');
+    if (existingLicense) existingLicense.remove();
+
     if (plugin.status === 'dev' || !plugin.versions || plugin.versions.length === 0) {
         modalDownloadBtn.disabled = true;
         modalDownloadBtn.innerHTML = '<i class="fas fa-code"></i> No disponible';
@@ -225,6 +229,35 @@ function updateDownloadButton() {
 
     var downloadUrl = getDownloadLink(plugin.id, selectedVersion);
     var hasDownload = !!downloadUrl;
+
+    // Mostrar licencia si el usuario tiene el plugin y es de pago
+    if (plugin.paid && isLoggedIn && currentUser && userHasPlugin(currentUser, plugin.id)) {
+        var license = getUserLicense(currentUser, plugin.id);
+        if (license) {
+            var licenseDiv = document.createElement('div');
+            licenseDiv.className = 'license-display';
+            licenseDiv.style.cssText = 'margin: 0.5rem 0 1rem 0; padding: 0.5rem; background: rgba(255,255,255,0.03); border-radius: 0.5rem; text-align: center;';
+            licenseDiv.innerHTML = `
+                <span style="color:#8892b0; font-size:0.85rem;">🔑 Licencia: </span>
+                <span class="license-text" style="color:#a78bfa; font-weight:600; cursor:pointer; filter: blur(4px); transition: filter 0.3s;" onclick="this.style.filter='blur(0px)'; this.innerText=this.dataset.license;">Click para ver</span>
+                <span style="display:none;" class="license-hidden" data-license="${license}"></span>
+            `;
+            // Mejorar: al hacer clic, revelar licencia y cambiar texto
+            var span = licenseDiv.querySelector('.license-text');
+            span.dataset.license = license;
+            span.addEventListener('click', function() {
+                if (this.style.filter === 'blur(0px)') {
+                    this.style.filter = 'blur(4px)';
+                    this.innerText = 'Click para ver';
+                } else {
+                    this.style.filter = 'blur(0px)';
+                    this.innerText = this.dataset.license;
+                }
+            });
+            // Insertar antes del botón de descarga
+            modalDownloadBtn.parentNode.insertBefore(licenseDiv, modalDownloadBtn);
+        }
+    }
 
     if (hasAccess && hasDownload) {
         modalDownloadBtn.disabled = false;
@@ -483,7 +516,8 @@ function handleRedeem() {
         if (result.usesLeft !== undefined) {
             usosMsg = result.usesLeft === Infinity ? ' (∞ usos restantes)' : ' (' + result.usesLeft + ' usos restantes)';
         }
-        redeemSuccess.textContent = '✅ ¡Plugin canjeado correctamente!' + usosMsg;
+        var licMsg = result.license ? ' Licencia: ' + result.license : '';
+        redeemSuccess.textContent = '✅ ¡Plugin canjeado correctamente!' + usosMsg + licMsg;
         redeemError.textContent = '';
         redeemKey.value = '';
         updateUI();
@@ -616,7 +650,6 @@ function sendMyTicketReply(ticketId) {
     var result = addTicketMessage(ticketId, currentUser, text);
     if (result) {
         input.value = '';
-        // Recargar la lista y cerrar detalle para refrescar
         openMyTicketsModal();
     }
 }
