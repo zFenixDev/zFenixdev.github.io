@@ -1,0 +1,17 @@
+# Dependencias
+node_modules/
+
+# Archivos de base de datos
+database.json
+
+# Archivos de logs
+*.log
+npm-debug.log*
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de entorno
+.env
+.env.local

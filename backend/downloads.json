@@ -1,0 +1,24 @@
+{
+    "downloads": {
+        "zcore": {
+            "1.0.0": "https://cdn.zein.dev/plugins/zcore-1.0.0.jar",
+            "1.1.0": "https://cdn.zein.dev/plugins/zcore-1.1.0.jar"
+        },
+        "zshop": {
+            "1.0.0": "https://cdn.zein.dev/plugins/zshop-1.0.0.jar"
+        },
+        "zkoth": {
+            "1.0.0": "https://cdn.zein.dev/plugins/zkoth-1.0.0.jar"
+        },
+        "zkits": {
+            "1.0.0": "https://cdn.zein.dev/plugins/zkits-1.0.0.jar"
+        },
+        "zclans": {
+            "1.0.0": "https://cdn.zein.dev/plugins/zclans-1.0.0.jar"
+        },
+        "zapi": {},
+        "zhub": {
+            "1.0.0": "https://cdn.zein.dev/plugins/zhub-1.0.0.jar"
+        }
+    }
+}

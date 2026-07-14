@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zein Development · Plugins</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app" id="app">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo-area" id="logoLink" style="cursor:pointer;">
+                <div class="logo-icon"><i class="fas fa-cubes"></i></div>
+                <div class="logo-text">Zein <span>Development</span></div>
+            </div>
+            <div class="user-badge" id="userBadge">
+                <i class="fas fa-user-astronaut"></i>
+                <span class="status">
+                    <span class="status-dot offline" id="statusDot"></span>
+                    <span id="userStatusText">Invitado</span>
+                </span>
+                <i class="fas fa-chevron-down" style="font-size:0.7rem; opacity:0.6;"></i>
+                <!-- DROPDOWN -->
+                <div class="user-dropdown" id="userDropdown">
+                    <button class="dropdown-item" id="dropdownSettings"><i class="fas fa-cog"></i> Configuración</button>
+                    <button class="dropdown-item" id="dropdownRedeem"><i class="fas fa-gift"></i> Reclamar producto</button>
+                    <button class="dropdown-item" id="dropdownSupport"><i class="fas fa-headset"></i> Soporte</button>
+                    <button class="dropdown-item" id="dropdownMyTickets"><i class="fas fa-ticket-alt"></i> Mis tickets</button>
+                    <!-- NUEVO: Mis licencias -->
+                    <button class="dropdown-item" id="dropdownMyLicenses"><i class="fas fa-key"></i> Mis licencias</button>
+                    <button class="dropdown-item" id="dropdownDiscord" onclick="window.open('https://discord.gg/3EQZddFe5q', '_blank')">
+                        <i class="fab fa-discord" style="color:#5865F2;"></i> Discord oficial
+                    </button>
+                    <button class="dropdown-item" id="dropdownAdmin" style="display:none;"><i class="fas fa-shield-alt"></i> Panel Admin</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" id="dropdownLogout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- PÁGINAS (SPA) -->
+        <div id="pageContainer">
+            <div id="pagePlugins">
+                <div class="plugin-grid" id="pluginGrid"></div>
+            </div>
+            <div id="pageSettings" style="display:none;"></div>
+            <div id="pageAdmin" style="display:none;"></div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer-note">
+            <div style="display:flex; gap:1.2rem; align-items:center;">
+                <i class="fas fa-jar" style="color:#6d7a9e;"></i>
+                <span style="color:#8892b0;" id="pluginCount">0 plugins</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES -->
+
+    <!-- Login/Registro -->
+    <div class="modal-overlay" id="loginModalOverlay">
+        <div class="modal">
+            <button class="modal-close" id="loginModalClose"><i class="fas fa-times"></i></button>
+            <div class="modal-title" id="loginModalTitle">Iniciar sesión</div>
+            <div class="modal-sub" id="loginModalSub">Ingresa tus credenciales</div>
+            <div class="modal-form" id="loginForm">
+                <input type="text" id="loginUserInput" placeholder="Usuario">
+                <input type="password" id="loginPassInput" placeholder="Contraseña">
+                <input type="email" id="loginEmailInput" placeholder="Correo (para registro)" style="display:none;">
+                <div class="modal-error" id="loginError"></div>
+                <button class="btn-primary" id="loginBtn">Iniciar sesión</button>
+                <div style="text-align:center;color:#6d7a9e;font-size:0.85rem;">
+                    <span id="loginToggleText">¿No tienes cuenta? <span class="login-toggle" id="switchToRegister">Regístrate</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reclamar producto -->
+    <div class="modal-overlay" id="redeemModal">
+        <div class="modal">
+            <button class="modal-close" id="redeemModalClose"><i class="fas fa-times"></i></button>
+            <div class="modal-title">Reclamar producto</div>
+            <div class="modal-sub">Ingresa el código de activación</div>
+            <div class="modal-form" id="redeemForm">
+                <input type="text" id="redeemKey" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX">
+                <div class="modal-error" id="redeemError"></div>
+                <div class="modal-success" id="redeemSuccess"></div>
+                <button class="btn-primary" id="redeemBtn">Canjear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalle de plugin -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+            <div class="modal-icon" id="modalIcon"><i class="fas fa-cube"></i></div>
+            <div class="modal-title" id="modalTitle">zCore</div>
+            <div class="modal-version"><i class="fas fa-tag"></i> <span id="modalVersionLabel">Versión 1.0.0</span></div>
+            <div><span class="modal-status" id="modalStatus">PAID</span></div>
+            <div class="modal-full-desc" id="modalFullDesc">Descripción completa.</div>
+            <div class="version-selector" id="versionSelector"></div>
+            <div class="modal-download-area">
+                <button class="modal-download-btn" id="modalDownloadBtn"><i class="fas fa-download"></i> Descargar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crear ticket (Soporte) -->
+    <div class="modal-overlay" id="ticketModal">
+        <div class="modal">
+            <button class="modal-close" id="ticketModalClose"><i class="fas fa-times"></i></button>
+            <div class="modal-title">Crear ticket de soporte</div>
+            <div class="modal-sub">Describe tu problema o consulta</div>
+            <div class="modal-form" id="ticketForm">
+                <input type="text" id="ticketTitle" placeholder="Título del ticket">
+                <textarea id="ticketMessage" placeholder="Mensaje detallado..." rows="4"></textarea>
+                <div class="modal-error" id="ticketError"></div>
+                <div class="modal-success" id="ticketSuccess"></div>
+                <button class="btn-primary" id="ticketBtn">Enviar ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mis Tickets -->
+    <div class="modal-overlay" id="myTicketsModal">
+        <div class="modal" style="max-width: 700px;">
+            <button class="modal-close" id="myTicketsModalClose"><i class="fas fa-times"></i></button>
+            <div class="modal-title"><i class="fas fa-ticket-alt"></i> Mis tickets</div>
+            <div class="modal-sub">Historial de tickets creados por ti</div>
+            <div id="myTicketsList" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <!-- Mis Licencias -->
+    <div class="modal-overlay" id="myLicensesModal">
+        <div class="modal" style="max-width: 700px;">
+            <button class="modal-close" id="myLicensesModalClose"><i class="fas fa-times"></i></button>
+            <div class="modal-title"><i class="fas fa-key"></i> Mis licencias</div>
+            <div class="modal-sub">Licencias de los plugins que has adquirido</div>
+            <div id="myLicensesList" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="codes.js"></script>
+    <script src="plugins.js"></script>
+    <script src="tickets.js"></script>
+    <script src="settings.js"></script>
+    <script src="admin.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
