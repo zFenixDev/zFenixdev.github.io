@@ -28,7 +28,8 @@
                     <button class="dropdown-item" id="dropdownRedeem"><i class="fas fa-gift"></i> Reclamar producto</button>
                     <button class="dropdown-item" id="dropdownSupport"><i class="fas fa-headset"></i> Soporte</button>
                     <button class="dropdown-item" id="dropdownMyTickets"><i class="fas fa-ticket-alt"></i> Mis tickets</button>
-                    <!-- NUEVO: Discord -->
+                    <!-- NUEVO: Mis licencias -->
+                    <button class="dropdown-item" id="dropdownMyLicenses"><i class="fas fa-key"></i> Mis licencias</button>
                     <button class="dropdown-item" id="dropdownDiscord" onclick="window.open('https://discord.gg/3EQZddFe5q', '_blank')">
                         <i class="fab fa-discord" style="color:#5865F2;"></i> Discord oficial
                     </button>
@@ -132,6 +133,16 @@
             <div class="modal-title"><i class="fas fa-ticket-alt"></i> Mis tickets</div>
             <div class="modal-sub">Historial de tickets creados por ti</div>
             <div id="myTicketsList" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <!-- Mis Licencias -->
+    <div class="modal-overlay" id="myLicensesModal">
+        <div class="modal" style="max-width: 700px;">
+            <button class="modal-close" id="myLicensesModalClose"><i class="fas fa-times"></i></button>
+            <div class="modal-title"><i class="fas fa-key"></i> Mis licencias</div>
+            <div class="modal-sub">Licencias de los plugins que has adquirido</div>
+            <div id="myLicensesList" style="margin-top: 1rem;"></div>
         </div>
     </div>
 
