@@ -1,5 +1,5 @@
 // ============================================================
-// admin.js - Panel de administración (con Gestión de cuentas)
+// admin.js - Panel de administración (con Gestión de Cuentas)
 // ============================================================
 
 var adminContainer = document.getElementById('pageAdmin');
@@ -29,9 +29,9 @@ function renderAdminPage() {
     var html = `
         <div class="admin-container">
             <h2>🛡️ Panel de Administración</h2>
-            <p class="sub">Gestiona códigos, usuarios, licencias y tickets</p>
+            <p class="sub">Gestiona códigos, usuarios y tickets</p>
 
-            <!-- Crear código -->
+            <!-- CREAR CÓDIGO -->
             <div class="admin-section">
                 <h3><i class="fas fa-key"></i> Crear código canjeable</h3>
                 <form class="admin-form" id="adminCreateCodeForm">
@@ -111,33 +111,29 @@ function renderAdminPage() {
                 </form>
             </div>
 
-            <!-- Lista de códigos -->
+            <!-- LISTA DE CÓDIGOS -->
             <div class="admin-section">
                 <h3><i class="fas fa-list"></i> Códigos creados</h3>
                 <div id="adminCodeList"></div>
             </div>
 
-            <!-- Gestión de administradores -->
+            <!-- GESTIÓN DE ADMINISTRADORES -->
             <div class="admin-section">
                 <h3><i class="fas fa-users-cog"></i> Gestión de administradores</h3>
                 <div id="adminUserList"></div>
             </div>
 
-            <!-- NUEVO: Gestión de cuentas -->
+            <!-- NUEVO: GESTIÓN DE CUENTAS (VER/MODIFICAR PRODUCTOS) -->
             <div class="admin-section">
-                <h3><i class="fas fa-user-cog"></i> Gestión de cuentas</h3>
-                <div class="account-search">
-                    <input type="text" id="accountSearchInput" placeholder="Buscar por nombre o correo...">
-                    <button id="accountSearchBtn" class="btn-secondary"><i class="fas fa-search"></i> Buscar</button>
+                <h3><i class="fas fa-user-edit"></i> Gestión de cuentas</h3>
+                <div style="margin-bottom: 1rem;">
+                    <input type="text" id="adminSearchUser" placeholder="Buscar por usuario o email..." style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:60px; padding:0.7rem 1.2rem; color:#f0f2ff; outline:none;">
                 </div>
-                <div id="accountSearchResults" style="margin-top: 1rem;"></div>
-                <div id="accountDetail" style="margin-top: 1.5rem; display:none;">
-                    <h4 style="color:#f0f2ff; margin-bottom:0.5rem;">Detalles del usuario</h4>
-                    <div id="accountDetailContent"></div>
-                </div>
+                <div id="adminAccountList"></div>
+                <div id="accountDetail" style="margin-top:1rem; display:none;"></div>
             </div>
 
-            <!-- Tickets -->
+            <!-- TICKETS -->
             <div class="admin-section">
                 <h3><i class="fas fa-ticket-alt"></i> Tickets</h3>
                 <div id="adminTicketList"></div>
@@ -147,7 +143,7 @@ function renderAdminPage() {
 
     adminContainer.innerHTML = html;
 
-    // ===== Eventos =====
+    // Eventos
     document.getElementById('adminCodeType').addEventListener('change', function() {
         document.getElementById('adminManualCodeGroup').style.display = this.value === 'manual' ? 'block' : 'none';
     });
@@ -156,7 +152,6 @@ function renderAdminPage() {
         document.getElementById('adminPermissionDurationGroup').style.display = this.checked ? 'block' : 'none';
     });
 
-    // Contar checkboxes
     var checkboxes = document.querySelectorAll('#adminPluginsCheckboxes input[type="checkbox"]');
     var countDisplay = document.getElementById('selectedPluginsCount');
     var licenseFieldGroup = document.getElementById('licenseFieldGroup');
@@ -185,206 +180,18 @@ function renderAdminPage() {
         handleAdminCreateCode();
     });
 
-    // Eventos de búsqueda de cuentas
-    document.getElementById('accountSearchBtn').addEventListener('click', function() {
-        searchAccounts();
-    });
-    document.getElementById('accountSearchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') searchAccounts();
+    // Búsqueda de cuentas
+    document.getElementById('adminSearchUser').addEventListener('input', function() {
+        renderAccountList(this.value.trim());
     });
 
-    // Cargar listas
     renderAdminCodeList();
     renderAdminUserList();
     renderAdminTicketList();
-    // Limpiar resultados de búsqueda inicial
-    document.getElementById('accountSearchResults').innerHTML = '';
-    document.getElementById('accountDetail').style.display = 'none';
+    renderAccountList('');
 }
 
-// ===== Funciones de búsqueda de cuentas =====
-function searchAccounts() {
-    var query = document.getElementById('accountSearchInput').value.trim().toLowerCase();
-    var resultsContainer = document.getElementById('accountSearchResults');
-    var detailContainer = document.getElementById('accountDetail');
-    var detailContent = document.getElementById('accountDetailContent');
-
-    if (!query) {
-        resultsContainer.innerHTML = '<p style="color:#8892b0;">Ingresa un nombre de usuario o correo para buscar.</p>';
-        detailContainer.style.display = 'none';
-        return;
-    }
-
-    var users = loadUsers();
-    var foundUsers = [];
-    for (var u in users) {
-        var user = users[u];
-        var displayName = (user.displayName || u).toLowerCase();
-        var email = (user.email || '').toLowerCase();
-        if (displayName.includes(query) || u.toLowerCase().includes(query) || email.includes(query)) {
-            foundUsers.push({ username: u, data: user });
-        }
-    }
-
-    if (foundUsers.length === 0) {
-        resultsContainer.innerHTML = '<p style="color:#8892b0;">No se encontraron usuarios.</p>';
-        detailContainer.style.display = 'none';
-        return;
-    }
-
-    // Mostrar lista de usuarios encontrados
-    var html = '<div style="display:flex; flex-wrap:wrap; gap:0.5rem;">';
-    for (var i = 0; i < foundUsers.length; i++) {
-        var fu = foundUsers[i];
-        html += `
-            <button class="user-chip" data-username="${fu.username}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:60px;padding:0.4rem 1rem;color:#c8d0e6;cursor:pointer;transition:0.2s;">
-                <i class="fas fa-user"></i> ${fu.username} (${fu.data.displayName || fu.username})
-            </button>
-        `;
-    }
-    html += '</div>';
-    resultsContainer.innerHTML = html;
-
-    // Asignar eventos a los chips
-    var chips = resultsContainer.querySelectorAll('.user-chip');
-    for (var j = 0; j < chips.length; j++) {
-        chips[j].addEventListener('click', function() {
-            var username = this.getAttribute('data-username');
-            showAccountDetail(username);
-        });
-    }
-}
-
-function showAccountDetail(username) {
-    var users = loadUsers();
-    var user = users[username];
-    if (!user) {
-        alert('Usuario no encontrado.');
-        return;
-    }
-
-    var detailContainer = document.getElementById('accountDetail');
-    var detailContent = document.getElementById('accountDetailContent');
-    detailContainer.style.display = 'block';
-
-    var allPlugins = window.PLUGINS_DATA || [];
-    var userPlugins = user.plugins || [];
-
-    // Construir listado de plugins con checkboxes para añadir/eliminar
-    var pluginsHtml = '';
-    for (var i = 0; i < allPlugins.length; i++) {
-        var p = allPlugins[i];
-        var checked = userPlugins.indexOf(p.id) !== -1 ? 'checked' : '';
-        // Si el plugin es gratuito o en desarrollo, no se puede gestionar (solo mostrar)
-        var disabled = (p.status === 'free' || p.status === 'dev') ? 'disabled' : '';
-        var labelStyle = (p.status === 'free' || p.status === 'dev') ? 'opacity:0.6;' : '';
-        pluginsHtml += `
-            <label class="checkbox-card" style="${labelStyle}">
-                <input type="checkbox" name="userPlugin" value="${p.id}" ${checked} ${disabled}>
-                <span class="checkmark"></span>
-                ${p.name} (${p.status})
-                ${disabled ? ' <span style="color:#8892b0;font-size:0.7rem;">(no editable)</span>' : ''}
-            </label>
-        `;
-    }
-
-    detailContent.innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; background:rgba(255,255,255,0.02); padding:1rem; border-radius:1rem;">
-            <div><strong>Usuario:</strong> ${username}</div>
-            <div><strong>Nombre:</strong> ${user.displayName || username}</div>
-            <div><strong>Email:</strong> ${user.email || 'No establecido'}</div>
-            <div><strong>Rol:</strong> <span class="badge ${user.role === 'owner' ? 'owner' : (user.role === 'admin' ? 'admin' : (user.role === 'staff' ? 'staff' : 'user'))}">${user.role || 'user'}</span></div>
-        </div>
-        <div style="margin-top:1rem;">
-            <h5 style="color:#c8d0e6; margin-bottom:0.5rem;">Plugins (marca/desmarca para gestionar)</h5>
-            <div class="checkbox-group modern-checkboxes" id="userPluginsList">
-                ${pluginsHtml}
-            </div>
-            <button id="saveUserPluginsBtn" class="btn-primary" style="margin-top:0.5rem; width:auto; padding:0.5rem 2rem;"><i class="fas fa-save"></i> Guardar cambios</button>
-            <span id="userPluginsMessage" style="margin-left:1rem; color:#4ade80;"></span>
-        </div>
-        <div style="margin-top:1.5rem;">
-            <button id="resetUserPasswordBtn" class="btn-secondary" style="border-color:rgba(167,139,250,0.3);"><i class="fas fa-key"></i> Resetear contraseña</button>
-            <span id="resetPasswordMessage" style="margin-left:1rem; color:#4ade80;"></span>
-        </div>
-    `;
-
-    // Evento para guardar plugins del usuario
-    document.getElementById('saveUserPluginsBtn').addEventListener('click', function() {
-        saveUserPlugins(username);
-    });
-
-    // Evento para resetear contraseña
-    document.getElementById('resetUserPasswordBtn').addEventListener('click', function() {
-        resetUserPassword(username);
-    });
-}
-
-function saveUserPlugins(username) {
-    var checkboxes = document.querySelectorAll('#userPluginsList input[type="checkbox"]:not([disabled])');
-    var selectedPlugins = [];
-    for (var i = 0; i < checkboxes.length; i++) {
-        if (checkboxes[i].checked) {
-            selectedPlugins.push(checkboxes[i].value);
-        }
-    }
-
-    var users = loadUsers();
-    if (!users[username]) {
-        alert('Usuario no encontrado.');
-        return;
-    }
-    // Mantener plugins gratuitos y en desarrollo que ya tuviera (no se pueden quitar)
-    var currentPlugins = users[username].plugins || [];
-    var forcedPlugins = [];
-    var allPlugins = window.PLUGINS_DATA || [];
-    for (var p = 0; p < allPlugins.length; p++) {
-        var pl = allPlugins[p];
-        if (pl.status === 'free' || pl.status === 'dev') {
-            if (currentPlugins.indexOf(pl.id) !== -1) {
-                forcedPlugins.push(pl.id);
-            }
-        }
-    }
-    // Unir forzados con seleccionados
-    var finalPlugins = forcedPlugins.concat(selectedPlugins);
-    // Eliminar duplicados
-    finalPlugins = finalPlugins.filter(function(item, index) {
-        return finalPlugins.indexOf(item) === index;
-    });
-
-    users[username].plugins = finalPlugins;
-    saveUsers(users);
-    document.getElementById('userPluginsMessage').textContent = '✅ Plugins actualizados correctamente.';
-    setTimeout(function() {
-        document.getElementById('userPluginsMessage').textContent = '';
-    }, 3000);
-    // Actualizar la vista de detalles para reflejar cambios
-    showAccountDetail(username);
-}
-
-function resetUserPassword(username) {
-    if (username === 'Fxrz') {
-        alert('No se puede resetear la contraseña del Owner.');
-        return;
-    }
-    var newPassword = prompt('Ingresa la nueva contraseña para ' + username + ':');
-    if (newPassword === null || newPassword.trim() === '') return;
-    var users = loadUsers();
-    if (!users[username]) {
-        alert('Usuario no encontrado.');
-        return;
-    }
-    users[username].password = newPassword.trim();
-    saveUsers(users);
-    document.getElementById('resetPasswordMessage').textContent = '✅ Contraseña actualizada.';
-    setTimeout(function() {
-        document.getElementById('resetPasswordMessage').textContent = '';
-    }, 3000);
-}
-
-// ===== Resto de funciones de admin.js (creación de códigos, listados, etc.) =====
-
+// ===== CREAR CÓDIGO =====
 function handleAdminCreateCode() {
     var type = document.getElementById('adminCodeType').value;
     var manualCode = document.getElementById('adminManualCode').value.trim().toUpperCase();
@@ -487,11 +294,13 @@ function handleAdminCreateCode() {
         document.querySelectorAll('#adminPluginsCheckboxes input[type="checkbox"]').forEach(function(cb) { cb.dispatchEvent(event); });
         renderAdminCodeList();
         renderAdminUserList();
+        renderAccountList(document.getElementById('adminSearchUser').value.trim());
     } else {
         messageEl.innerHTML = '<span style="color:#f87171;">❌ Error al crear el código. Intenta de nuevo.</span>';
     }
 }
 
+// ===== LISTA DE CÓDIGOS =====
 function renderAdminCodeList() {
     var container = document.getElementById('adminCodeList');
     var codes = listRedeemCodes();
@@ -527,12 +336,14 @@ function deleteCode(code) {
         var result = deleteRedeemCode(code);
         if (result.success) {
             renderAdminCodeList();
+            renderAdminUserList();
         } else {
             alert(result.error);
         }
     }
 }
 
+// ===== GESTIÓN DE ADMINISTRADORES =====
 function renderAdminUserList() {
     var container = document.getElementById('adminUserList');
     var users = loadUsers();
@@ -572,6 +383,7 @@ function changeUserRole(username, role) {
     var result = setUserRole(username, role);
     if (result.success) {
         renderAdminUserList();
+        renderAccountList(document.getElementById('adminSearchUser').value.trim());
     } else {
         alert(result.error);
     }
@@ -586,12 +398,164 @@ function deleteUserAccount(username) {
         var result = deleteUser(username);
         if (result.success) {
             renderAdminUserList();
+            renderAccountList(document.getElementById('adminSearchUser').value.trim());
         } else {
             alert(result.error);
         }
     }
 }
 
+// ===== NUEVO: GESTIÓN DE CUENTAS =====
+function renderAccountList(query) {
+    var container = document.getElementById('adminAccountList');
+    var users = loadUsers();
+    var filtered = [];
+    query = query.toLowerCase();
+    for (var u in users) {
+        var user = users[u];
+        var match = u.toLowerCase().includes(query) || (user.email && user.email.toLowerCase().includes(query));
+        if (match || query === '') {
+            filtered.push({ username: u, data: user });
+        }
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="color:#8892b0; text-align:center; padding:1rem;">No se encontraron usuarios.</p>';
+        document.getElementById('accountDetail').style.display = 'none';
+        return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr><th>Usuario</th><th>Email</th><th>Plugins</th><th>Acciones</th></tr></thead><tbody>';
+    for (var i = 0; i < filtered.length; i++) {
+        var entry = filtered[i];
+        var user = entry.data;
+        var plugins = user.plugins || [];
+        var pluginNames = plugins.map(function(id) {
+            var p = window.PLUGINS_DATA.find(function(pl) { return pl.id === id; });
+            return p ? p.name : id;
+        }).join(', ') || 'Ninguno';
+        html += `
+            <tr>
+                <td><strong>${entry.username}</strong></td>
+                <td>${user.email || '-'}</td>
+                <td>${pluginNames}</td>
+                <td class="actions">
+                    <button onclick="openAccountDetail('${entry.username}')" style="background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.2);border-radius:60px;padding:0.2rem 0.8rem;color:#a78bfa;cursor:pointer;transition:0.2s;">
+                        <i class="fas fa-eye"></i> Ver/Gestionar
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    document.getElementById('accountDetail').style.display = 'none';
+}
+
+function openAccountDetail(username) {
+    var detailDiv = document.getElementById('accountDetail');
+    var users = loadUsers();
+    var user = users[username];
+    if (!user) {
+        detailDiv.innerHTML = '<p style="color:#f87171;">Usuario no encontrado.</p>';
+        detailDiv.style.display = 'block';
+        return;
+    }
+
+    var plugins = user.plugins || [];
+    var allPlugins = window.PLUGINS_DATA || [];
+    var html = `
+        <div style="background:rgba(255,255,255,0.03);border-radius:1.5rem;padding:1.5rem;border:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h4 style="color:#f0f2ff;">Cuenta de: <strong>${username}</strong></h4>
+                <button onclick="document.getElementById('accountDetail').style.display='none'" style="background:none;border:none;color:#8892b0;font-size:1.2rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="color:#8892b0; margin-bottom:1rem;">Email: ${user.email || 'No establecido'}</p>
+            <div style="display:flex; flex-wrap:wrap; gap:0.8rem; margin-bottom:1.5rem;">
+                ${allPlugins.filter(function(p) { return p.paid; }).map(function(p) {
+                    var has = plugins.indexOf(p.id) !== -1;
+                    return `
+                        <label style="display:flex; align-items:center; gap:0.4rem; background:rgba(255,255,255,0.04); padding:0.3rem 0.8rem; border-radius:60px; cursor:pointer; border:1px solid ${has ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.06)'};">
+                            <input type="checkbox" ${has ? 'checked' : ''} onchange="toggleUserPlugin('${username}', '${p.id}')" style="accent-color:#a78bfa;">
+                            <span style="color:${has ? '#4ade80' : '#b9c2dd'};">${p.name}</span>
+                        </label>
+                    `;
+                }).join('')}
+            </div>
+            <button onclick="saveUserPlugins('${username}')" class="btn-primary" style="width:auto; padding:0.5rem 1.5rem; font-size:0.9rem;">
+                <i class="fas fa-save"></i> Guardar cambios
+            </button>
+            <div id="accountDetailMessage" style="margin-top:0.8rem;"></div>
+        </div>
+    `;
+    detailDiv.innerHTML = html;
+    detailDiv.style.display = 'block';
+    // Guardar estado temporal para aplicar cambios
+    detailDiv.dataset.username = username;
+    detailDiv.dataset.originalPlugins = JSON.stringify(plugins);
+    // Inicializar array de cambios
+    if (!window._pluginChanges) window._pluginChanges = {};
+    window._pluginChanges[username] = plugins.slice();
+}
+
+function toggleUserPlugin(username, pluginId) {
+    if (!window._pluginChanges) window._pluginChanges = {};
+    if (!window._pluginChanges[username]) {
+        var users = loadUsers();
+        window._pluginChanges[username] = (users[username]?.plugins || []).slice();
+    }
+    var idx = window._pluginChanges[username].indexOf(pluginId);
+    if (idx === -1) {
+        window._pluginChanges[username].push(pluginId);
+    } else {
+        window._pluginChanges[username].splice(idx, 1);
+    }
+    // Actualizar visualmente el checkbox (ya se maneja solo)
+}
+
+function saveUserPlugins(username) {
+    var changes = window._pluginChanges[username];
+    if (!changes) {
+        document.getElementById('accountDetailMessage').innerHTML = '<span style="color:#8892b0;">No hay cambios.</span>';
+        return;
+    }
+    var users = loadUsers();
+    if (!users[username]) {
+        document.getElementById('accountDetailMessage').innerHTML = '<span style="color:#f87171;">Usuario no encontrado.</span>';
+        return;
+    }
+    users[username].plugins = changes.slice();
+    saveUsers(users);
+    // Actualizar licencias si se añadió algún plugin de pago
+    var allPaid = window.PLUGINS_DATA.filter(function(p) { return p.paid; }).map(function(p) { return p.id; });
+    for (var i = 0; i < changes.length; i++) {
+        var pid = changes[i];
+        if (allPaid.indexOf(pid) !== -1) {
+            if (!users[username].licenses) users[username].licenses = {};
+            if (!users[username].licenses[pid]) {
+                users[username].licenses[pid] = 'ADMIN-' + pid.toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+            }
+        }
+    }
+    // Eliminar licencias de plugins que ya no tiene
+    for (var lic in users[username].licenses) {
+        if (changes.indexOf(lic) === -1) {
+            delete users[username].licenses[lic];
+        }
+    }
+    saveUsers(users);
+    document.getElementById('accountDetailMessage').innerHTML = '<span style="color:#4ade80;">✅ Cambios guardados correctamente.</span>';
+    window._pluginChanges[username] = null;
+    // Refrescar listas
+    renderAdminUserList();
+    renderAccountList(document.getElementById('adminSearchUser').value.trim());
+    // Actualizar detalle con nuevos datos
+    setTimeout(function() {
+        openAccountDetail(username);
+    }, 300);
+}
+
+// ===== TICKETS =====
 function renderAdminTicketList() {
     var container = document.getElementById('adminTicketList');
     var tickets = getTickets();
@@ -692,53 +656,3 @@ function reopenTicketById(ticketId) {
     toggleTicketDetail(ticketId);
     renderAdminTicketList();
 }
-
-// Estilos adicionales para la gestión de cuentas (se añaden al final del archivo para que se apliquen)
-// Nota: los estilos deben estar en styles.css, pero los añadimos dinámicamente por si acaso
-var style = document.createElement('style');
-style.textContent = `
-    .user-chip {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 60px;
-        padding: 0.4rem 1rem;
-        color: #c8d0e6;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-    .user-chip:hover {
-        background: rgba(167,139,250,0.12);
-        border-color: rgba(167,139,250,0.2);
-    }
-    .account-search {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-    .account-search input {
-        flex: 1;
-        min-width: 200px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 60px;
-        padding: 0.6rem 1.2rem;
-        color: #f0f2ff;
-        outline: none;
-    }
-    .account-search input:focus {
-        border-color: #a78bfa;
-    }
-    .account-search .btn-secondary {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        padding: 0.6rem 1.2rem;
-        border-radius: 60px;
-        color: #c8d0e6;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-    .account-search .btn-secondary:hover {
-        background: rgba(255,255,255,0.08);
-    }
-`;
-document.head.appendChild(style);
