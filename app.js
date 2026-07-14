@@ -1,5 +1,5 @@
 // ============================================================
-// app.js - Enrutamiento y lógica principal (CORREGIDO)
+// app.js - Enrutamiento y lógica principal (CORREGIDO FINAL)
 // ============================================================
 
 var currentPlugin = null;
@@ -136,12 +136,9 @@ function renderPlugins() {
         grid.appendChild(card);
     }
 
-    // Asignar eventos a los botones "Ver más información"
-    // Usamos un enfoque más robusto: eliminar todos los listeners anteriores no es posible sin referencias,
-    // pero al clonar los botones nos aseguramos de que no tengan eventos antiguos.
+    // Asignar eventos a los botones (con clonado para evitar duplicados)
     var buttons = document.querySelectorAll('.btn-info');
     for (var j = 0; j < buttons.length; j++) {
-        // Clonar para eliminar eventos anteriores
         var newBtn = buttons[j].cloneNode(true);
         buttons[j].parentNode.replaceChild(newBtn, buttons[j]);
         newBtn.addEventListener('click', function(e) {
@@ -152,11 +149,15 @@ function renderPlugins() {
             for (var k = 0; k < allPlugins.length; k++) {
                 if (allPlugins[k].id === pluginId) {
                     console.log('📦 Abriendo modal para:', allPlugins[k].name);
-                    // Forzar cierre de cualquier modal abierto
-                    forceCloseAllModals();
-                    // Abrir el modal después de un breve delay para evitar conflictos
+                    // === BUG CORREGIDO: capturar el plugin en una variable local ===
+                    var pluginToOpen = allPlugins[k];
+                    // Si hay un modal abierto, lo cerramos primero
+                    if (modalOverlay.classList.contains('active')) {
+                        closeModal();
+                    }
+                    // Usamos setTimeout con el plugin capturado (no con el índice)
                     setTimeout(function() {
-                        openModal(allPlugins[k]);
+                        openModal(pluginToOpen);
                     }, 50);
                     break;
                 }
@@ -168,48 +169,16 @@ function renderPlugins() {
     console.log('✅ Plugins renderizados correctamente.');
 }
 
-// Función para forzar cierre de todos los modales
-function forceCloseAllModals() {
-    // Cerrar modal de plugins
-    if (modalOverlay.classList.contains('active')) {
-        closeModal();
-    }
-    // Cerrar login
-    if (loginModalOverlay.classList.contains('active')) {
-        loginModalOverlay.classList.remove('active');
-    }
-    // Cerrar redeem
-    if (redeemModal.classList.contains('active')) {
-        redeemModal.classList.remove('active');
-    }
-    // Cerrar ticket
-    if (ticketModal.classList.contains('active')) {
-        ticketModal.classList.remove('active');
-    }
-    // Cerrar mis tickets
-    if (myTicketsModal.classList.contains('active')) {
-        myTicketsModal.classList.remove('active');
-    }
-    // Cerrar mis licencias
-    if (myLicensesModal.classList.contains('active')) {
-        myLicensesModal.classList.remove('active');
-    }
-}
-
 function openModal(plugin) {
     console.log('🟢 openModal llamado para:', plugin.name);
 
-    // Si el modal ya está abierto y es el mismo plugin, no hacer nada
-    if (modalOverlay.classList.contains('active') && currentPlugin && currentPlugin.id === plugin.id) {
-        console.log('⚠️ El modal ya está abierto para este plugin.');
-        return;
+    // Si hay un modal abierto, lo cerramos para evitar conflictos
+    if (modalOverlay.classList.contains('active')) {
+        closeModal();
     }
 
-    // Forzar cierre de cualquier modal abierto (por si acaso)
-    forceCloseAllModals();
-
-    // Resetear estado previo
-    currentPlugin = null;
+    // Asignar plugin ANTES de actualizar el botón
+    currentPlugin = plugin;
     selectedVersion = null;
 
     // Configurar el modal
@@ -243,17 +212,16 @@ function openModal(plugin) {
     modalStatus.textContent = st.label;
     modalFullDesc.textContent = plugin.fullDesc || plugin.shortDesc;
 
-    // Limpiar área de licencia anterior
+    // Limpiar licencia anterior
     var existingLicense = document.querySelector('.license-display');
     if (existingLicense) existingLicense.remove();
 
-    // Actualizar botón de descarga
+    // === BUG CORREGIDO: ahora currentPlugin ya está asignado ===
     updateDownloadButton();
 
-    // Eventos para las versiones (limpiar anteriores)
+    // Eventos para versiones (clonado para evitar duplicados)
     var chips = document.querySelectorAll('.version-chip');
     for (var c = 0; c < chips.length; c++) {
-        // Clonar para eliminar eventos anteriores
         var newChip = chips[c].cloneNode(true);
         chips[c].parentNode.replaceChild(newChip, chips[c]);
         newChip.addEventListener('click', function() {
@@ -268,10 +236,6 @@ function openModal(plugin) {
         });
     }
 
-    // Asignar el plugin actual después de configurar todo
-    currentPlugin = plugin;
-
-    // Mostrar el modal
     modalOverlay.classList.add('active');
     console.log('✅ Modal abierto.');
 }
@@ -280,7 +244,7 @@ function updateDownloadButton() {
     if (!currentPlugin) return;
     var plugin = currentPlugin;
 
-    // Limpiar área de licencia anterior
+    // Limpiar licencia anterior
     var existingLicense = document.querySelector('.license-display');
     if (existingLicense) existingLicense.remove();
 
@@ -294,7 +258,7 @@ function updateDownloadButton() {
 
     var hasAccess = false;
     if (!plugin.paid) {
-        hasAccess = true; // gratuito
+        hasAccess = true;
     } else {
         if (isLoggedIn && currentUser) {
             hasAccess = userHasPlugin(currentUser, plugin.id);
@@ -332,7 +296,6 @@ function updateDownloadButton() {
         modalDownloadBtn.disabled = false;
         modalDownloadBtn.innerHTML = '<i class="fas fa-download"></i> Descargar ' + plugin.name + ' ' + (selectedVersion || '');
         modalDownloadBtn.className = 'modal-download-btn';
-        // Clonar para eliminar eventos antiguos
         var newBtn = modalDownloadBtn.cloneNode(true);
         modalDownloadBtn.parentNode.replaceChild(newBtn, modalDownloadBtn);
         newBtn.addEventListener('click', function(e) {
@@ -723,7 +686,6 @@ function sendMyTicketReply(ticketId) {
     var result = addTicketMessage(ticketId, currentUser, text);
     if (result) {
         input.value = '';
-        // Recargar la lista de tickets
         openMyTicketsModal();
     }
 }
@@ -853,7 +815,6 @@ myTicketsModal.addEventListener('click', function(e) {
     if (e.target === myTicketsModal) myTicketsModal.classList.remove('active');
 });
 
-// Mis Licencias
 dropdownMyLicenses.addEventListener('click', function() {
     closeDropdown();
     if (!isLoggedIn || !currentUser) {
