@@ -1,5 +1,5 @@
 // ============================================================
-// admin.js - Panel de administración (con licencias)
+// admin.js - Panel de administración (con licencia condicional)
 // ============================================================
 
 var adminContainer = document.getElementById('pageAdmin');
@@ -47,14 +47,15 @@ function renderAdminPage() {
                     </div>
                     <div class="form-group">
                         <label>¿Qué otorgará el código?</label>
-                        <div class="checkbox-group" id="adminPluginsCheckboxes">
+                        <div class="checkbox-group modern-checkboxes" id="adminPluginsCheckboxes">
     `;
 
     var paidPlugins = window.PLUGINS_DATA.filter(function(p) { return p.paid; });
     for (var i = 0; i < paidPlugins.length; i++) {
         html += `
-            <label>
+            <label class="checkbox-card">
                 <input type="checkbox" name="plugin" value="${paidPlugins[i].id}">
+                <span class="checkmark"></span>
                 ${paidPlugins[i].name}
             </label>
         `;
@@ -62,6 +63,7 @@ function renderAdminPage() {
 
     html += `
                         </div>
+                        <div id="selectedPluginsCount" style="color:#8892b0; font-size:0.85rem; margin-top:0.3rem;">0 plugins seleccionados</div>
                     </div>
                     <div class="form-group">
                         <label>Usos del código</label>
@@ -75,15 +77,20 @@ function renderAdminPage() {
                             <option value="50">50 usos</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Licencia (opcional)</label>
+                    <div class="form-group" id="licenseFieldGroup" style="display:none;">
+                        <label for="adminLicenseInput">Licencia (obligatoria para un solo plugin)</label>
                         <input type="text" id="adminLicenseInput" placeholder="Ej: LIC-2024-ABCD-1234">
+                    </div>
+                    <div class="form-group" id="licenseOptionalGroup" style="display:block;">
+                        <label for="adminLicenseInputOptional">Licencia (opcional)</label>
+                        <input type="text" id="adminLicenseInputOptional" placeholder="Ej: LIC-2024-ABCD-1234">
                     </div>
                     <div class="form-group">
                         <label>Permisos (Administrador)</label>
-                        <div class="checkbox-group">
-                            <label>
+                        <div class="checkbox-group modern-checkboxes">
+                            <label class="checkbox-card">
                                 <input type="checkbox" id="adminGrantAdmin">
+                                <span class="checkmark"></span>
                                 Conceder permisos de administrador
                             </label>
                         </div>
@@ -99,7 +106,7 @@ function renderAdminPage() {
                         </div>
                     </div>
                     <div id="adminCreateMessage" class="admin-message"></div>
-                    <button type="submit" class="btn-primary">Generar código</button>
+                    <button type="submit" class="btn-primary btn-generate"><i class="fas fa-plus-circle"></i> Generar código</button>
                 </form>
             </div>
 
@@ -122,6 +129,7 @@ function renderAdminPage() {
 
     adminContainer.innerHTML = html;
 
+    // Eventos
     document.getElementById('adminCodeType').addEventListener('change', function() {
         document.getElementById('adminManualCodeGroup').style.display = this.value === 'manual' ? 'block' : 'none';
     });
@@ -129,6 +137,30 @@ function renderAdminPage() {
     document.getElementById('adminGrantAdmin').addEventListener('change', function() {
         document.getElementById('adminPermissionDurationGroup').style.display = this.checked ? 'block' : 'none';
     });
+
+    // Contar checkboxes seleccionados y mostrar/ocultar campos de licencia
+    var checkboxes = document.querySelectorAll('#adminPluginsCheckboxes input[type="checkbox"]');
+    var countDisplay = document.getElementById('selectedPluginsCount');
+    var licenseFieldGroup = document.getElementById('licenseFieldGroup');
+    var licenseOptionalGroup = document.getElementById('licenseOptionalGroup');
+
+    function updateLicenseFields() {
+        var checked = document.querySelectorAll('#adminPluginsCheckboxes input[type="checkbox"]:checked');
+        var count = checked.length;
+        countDisplay.textContent = count + ' plugin' + (count !== 1 ? 's' : '') + ' seleccionado' + (count !== 1 ? 's' : '');
+        if (count === 1) {
+            licenseFieldGroup.style.display = 'block';
+            licenseOptionalGroup.style.display = 'none';
+        } else {
+            licenseFieldGroup.style.display = 'none';
+            licenseOptionalGroup.style.display = 'block';
+        }
+    }
+
+    for (var c = 0; c < checkboxes.length; c++) {
+        checkboxes[c].addEventListener('change', updateLicenseFields);
+    }
+    updateLicenseFields();
 
     document.getElementById('adminCreateCodeForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -147,11 +179,23 @@ function handleAdminCreateCode() {
     var grantAdmin = document.getElementById('adminGrantAdmin').checked;
     var duration = document.getElementById('adminPermissionDuration').value;
     var uses = document.getElementById('adminUsesSelect').value;
-    var license = document.getElementById('adminLicenseInput').value.trim();
+    // Obtener licencia según modo
+    var license = '';
+    if (pluginCheckboxes.length === 1) {
+        license = document.getElementById('adminLicenseInput').value.trim();
+    } else {
+        license = document.getElementById('adminLicenseInputOptional').value.trim();
+    }
     var messageEl = document.getElementById('adminCreateMessage');
 
     if (pluginCheckboxes.length === 0) {
         messageEl.innerHTML = '<span style="color:#f87171;">❌ Selecciona al menos un plugin.</span>';
+        return;
+    }
+
+    // Si solo un plugin, la licencia es obligatoria
+    if (pluginCheckboxes.length === 1 && !license) {
+        messageEl.innerHTML = '<span style="color:#f87171;">❌ La licencia es obligatoria cuando seleccionas un solo plugin.</span>';
         return;
     }
 
@@ -227,6 +271,10 @@ function handleAdminCreateCode() {
         document.getElementById('adminGrantAdmin').checked = false;
         document.getElementById('adminPermissionDurationGroup').style.display = 'none';
         document.getElementById('adminLicenseInput').value = '';
+        document.getElementById('adminLicenseInputOptional').value = '';
+        // Actualizar contador
+        var event = new Event('change');
+        document.querySelectorAll('#adminPluginsCheckboxes input[type="checkbox"]').forEach(function(cb) { cb.dispatchEvent(event); });
         renderAdminCodeList();
         renderAdminUserList();
     } else {
