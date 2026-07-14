@@ -1,5 +1,5 @@
 // ============================================================
-// admin.js - Panel de administración (con licencia condicional)
+// admin.js - Panel de administración (con Gestión de cuentas)
 // ============================================================
 
 var adminContainer = document.getElementById('pageAdmin');
@@ -29,8 +29,9 @@ function renderAdminPage() {
     var html = `
         <div class="admin-container">
             <h2>🛡️ Panel de Administración</h2>
-            <p class="sub">Gestiona códigos, usuarios y tickets</p>
+            <p class="sub">Gestiona códigos, usuarios, licencias y tickets</p>
 
+            <!-- Crear código -->
             <div class="admin-section">
                 <h3><i class="fas fa-key"></i> Crear código canjeable</h3>
                 <form class="admin-form" id="adminCreateCodeForm">
@@ -110,16 +111,33 @@ function renderAdminPage() {
                 </form>
             </div>
 
+            <!-- Lista de códigos -->
             <div class="admin-section">
                 <h3><i class="fas fa-list"></i> Códigos creados</h3>
                 <div id="adminCodeList"></div>
             </div>
 
+            <!-- Gestión de administradores -->
             <div class="admin-section">
                 <h3><i class="fas fa-users-cog"></i> Gestión de administradores</h3>
                 <div id="adminUserList"></div>
             </div>
 
+            <!-- NUEVO: Gestión de cuentas -->
+            <div class="admin-section">
+                <h3><i class="fas fa-user-cog"></i> Gestión de cuentas</h3>
+                <div class="account-search">
+                    <input type="text" id="accountSearchInput" placeholder="Buscar por nombre o correo...">
+                    <button id="accountSearchBtn" class="btn-secondary"><i class="fas fa-search"></i> Buscar</button>
+                </div>
+                <div id="accountSearchResults" style="margin-top: 1rem;"></div>
+                <div id="accountDetail" style="margin-top: 1.5rem; display:none;">
+                    <h4 style="color:#f0f2ff; margin-bottom:0.5rem;">Detalles del usuario</h4>
+                    <div id="accountDetailContent"></div>
+                </div>
+            </div>
+
+            <!-- Tickets -->
             <div class="admin-section">
                 <h3><i class="fas fa-ticket-alt"></i> Tickets</h3>
                 <div id="adminTicketList"></div>
@@ -129,7 +147,7 @@ function renderAdminPage() {
 
     adminContainer.innerHTML = html;
 
-    // Eventos
+    // ===== Eventos =====
     document.getElementById('adminCodeType').addEventListener('change', function() {
         document.getElementById('adminManualCodeGroup').style.display = this.value === 'manual' ? 'block' : 'none';
     });
@@ -138,7 +156,7 @@ function renderAdminPage() {
         document.getElementById('adminPermissionDurationGroup').style.display = this.checked ? 'block' : 'none';
     });
 
-    // Contar checkboxes seleccionados y mostrar/ocultar campos de licencia
+    // Contar checkboxes
     var checkboxes = document.querySelectorAll('#adminPluginsCheckboxes input[type="checkbox"]');
     var countDisplay = document.getElementById('selectedPluginsCount');
     var licenseFieldGroup = document.getElementById('licenseFieldGroup');
@@ -167,10 +185,205 @@ function renderAdminPage() {
         handleAdminCreateCode();
     });
 
+    // Eventos de búsqueda de cuentas
+    document.getElementById('accountSearchBtn').addEventListener('click', function() {
+        searchAccounts();
+    });
+    document.getElementById('accountSearchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') searchAccounts();
+    });
+
+    // Cargar listas
     renderAdminCodeList();
     renderAdminUserList();
     renderAdminTicketList();
+    // Limpiar resultados de búsqueda inicial
+    document.getElementById('accountSearchResults').innerHTML = '';
+    document.getElementById('accountDetail').style.display = 'none';
 }
+
+// ===== Funciones de búsqueda de cuentas =====
+function searchAccounts() {
+    var query = document.getElementById('accountSearchInput').value.trim().toLowerCase();
+    var resultsContainer = document.getElementById('accountSearchResults');
+    var detailContainer = document.getElementById('accountDetail');
+    var detailContent = document.getElementById('accountDetailContent');
+
+    if (!query) {
+        resultsContainer.innerHTML = '<p style="color:#8892b0;">Ingresa un nombre de usuario o correo para buscar.</p>';
+        detailContainer.style.display = 'none';
+        return;
+    }
+
+    var users = loadUsers();
+    var foundUsers = [];
+    for (var u in users) {
+        var user = users[u];
+        var displayName = (user.displayName || u).toLowerCase();
+        var email = (user.email || '').toLowerCase();
+        if (displayName.includes(query) || u.toLowerCase().includes(query) || email.includes(query)) {
+            foundUsers.push({ username: u, data: user });
+        }
+    }
+
+    if (foundUsers.length === 0) {
+        resultsContainer.innerHTML = '<p style="color:#8892b0;">No se encontraron usuarios.</p>';
+        detailContainer.style.display = 'none';
+        return;
+    }
+
+    // Mostrar lista de usuarios encontrados
+    var html = '<div style="display:flex; flex-wrap:wrap; gap:0.5rem;">';
+    for (var i = 0; i < foundUsers.length; i++) {
+        var fu = foundUsers[i];
+        html += `
+            <button class="user-chip" data-username="${fu.username}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:60px;padding:0.4rem 1rem;color:#c8d0e6;cursor:pointer;transition:0.2s;">
+                <i class="fas fa-user"></i> ${fu.username} (${fu.data.displayName || fu.username})
+            </button>
+        `;
+    }
+    html += '</div>';
+    resultsContainer.innerHTML = html;
+
+    // Asignar eventos a los chips
+    var chips = resultsContainer.querySelectorAll('.user-chip');
+    for (var j = 0; j < chips.length; j++) {
+        chips[j].addEventListener('click', function() {
+            var username = this.getAttribute('data-username');
+            showAccountDetail(username);
+        });
+    }
+}
+
+function showAccountDetail(username) {
+    var users = loadUsers();
+    var user = users[username];
+    if (!user) {
+        alert('Usuario no encontrado.');
+        return;
+    }
+
+    var detailContainer = document.getElementById('accountDetail');
+    var detailContent = document.getElementById('accountDetailContent');
+    detailContainer.style.display = 'block';
+
+    var allPlugins = window.PLUGINS_DATA || [];
+    var userPlugins = user.plugins || [];
+
+    // Construir listado de plugins con checkboxes para añadir/eliminar
+    var pluginsHtml = '';
+    for (var i = 0; i < allPlugins.length; i++) {
+        var p = allPlugins[i];
+        var checked = userPlugins.indexOf(p.id) !== -1 ? 'checked' : '';
+        // Si el plugin es gratuito o en desarrollo, no se puede gestionar (solo mostrar)
+        var disabled = (p.status === 'free' || p.status === 'dev') ? 'disabled' : '';
+        var labelStyle = (p.status === 'free' || p.status === 'dev') ? 'opacity:0.6;' : '';
+        pluginsHtml += `
+            <label class="checkbox-card" style="${labelStyle}">
+                <input type="checkbox" name="userPlugin" value="${p.id}" ${checked} ${disabled}>
+                <span class="checkmark"></span>
+                ${p.name} (${p.status})
+                ${disabled ? ' <span style="color:#8892b0;font-size:0.7rem;">(no editable)</span>' : ''}
+            </label>
+        `;
+    }
+
+    detailContent.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; background:rgba(255,255,255,0.02); padding:1rem; border-radius:1rem;">
+            <div><strong>Usuario:</strong> ${username}</div>
+            <div><strong>Nombre:</strong> ${user.displayName || username}</div>
+            <div><strong>Email:</strong> ${user.email || 'No establecido'}</div>
+            <div><strong>Rol:</strong> <span class="badge ${user.role === 'owner' ? 'owner' : (user.role === 'admin' ? 'admin' : (user.role === 'staff' ? 'staff' : 'user'))}">${user.role || 'user'}</span></div>
+        </div>
+        <div style="margin-top:1rem;">
+            <h5 style="color:#c8d0e6; margin-bottom:0.5rem;">Plugins (marca/desmarca para gestionar)</h5>
+            <div class="checkbox-group modern-checkboxes" id="userPluginsList">
+                ${pluginsHtml}
+            </div>
+            <button id="saveUserPluginsBtn" class="btn-primary" style="margin-top:0.5rem; width:auto; padding:0.5rem 2rem;"><i class="fas fa-save"></i> Guardar cambios</button>
+            <span id="userPluginsMessage" style="margin-left:1rem; color:#4ade80;"></span>
+        </div>
+        <div style="margin-top:1.5rem;">
+            <button id="resetUserPasswordBtn" class="btn-secondary" style="border-color:rgba(167,139,250,0.3);"><i class="fas fa-key"></i> Resetear contraseña</button>
+            <span id="resetPasswordMessage" style="margin-left:1rem; color:#4ade80;"></span>
+        </div>
+    `;
+
+    // Evento para guardar plugins del usuario
+    document.getElementById('saveUserPluginsBtn').addEventListener('click', function() {
+        saveUserPlugins(username);
+    });
+
+    // Evento para resetear contraseña
+    document.getElementById('resetUserPasswordBtn').addEventListener('click', function() {
+        resetUserPassword(username);
+    });
+}
+
+function saveUserPlugins(username) {
+    var checkboxes = document.querySelectorAll('#userPluginsList input[type="checkbox"]:not([disabled])');
+    var selectedPlugins = [];
+    for (var i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) {
+            selectedPlugins.push(checkboxes[i].value);
+        }
+    }
+
+    var users = loadUsers();
+    if (!users[username]) {
+        alert('Usuario no encontrado.');
+        return;
+    }
+    // Mantener plugins gratuitos y en desarrollo que ya tuviera (no se pueden quitar)
+    var currentPlugins = users[username].plugins || [];
+    var forcedPlugins = [];
+    var allPlugins = window.PLUGINS_DATA || [];
+    for (var p = 0; p < allPlugins.length; p++) {
+        var pl = allPlugins[p];
+        if (pl.status === 'free' || pl.status === 'dev') {
+            if (currentPlugins.indexOf(pl.id) !== -1) {
+                forcedPlugins.push(pl.id);
+            }
+        }
+    }
+    // Unir forzados con seleccionados
+    var finalPlugins = forcedPlugins.concat(selectedPlugins);
+    // Eliminar duplicados
+    finalPlugins = finalPlugins.filter(function(item, index) {
+        return finalPlugins.indexOf(item) === index;
+    });
+
+    users[username].plugins = finalPlugins;
+    saveUsers(users);
+    document.getElementById('userPluginsMessage').textContent = '✅ Plugins actualizados correctamente.';
+    setTimeout(function() {
+        document.getElementById('userPluginsMessage').textContent = '';
+    }, 3000);
+    // Actualizar la vista de detalles para reflejar cambios
+    showAccountDetail(username);
+}
+
+function resetUserPassword(username) {
+    if (username === 'Fxrz') {
+        alert('No se puede resetear la contraseña del Owner.');
+        return;
+    }
+    var newPassword = prompt('Ingresa la nueva contraseña para ' + username + ':');
+    if (newPassword === null || newPassword.trim() === '') return;
+    var users = loadUsers();
+    if (!users[username]) {
+        alert('Usuario no encontrado.');
+        return;
+    }
+    users[username].password = newPassword.trim();
+    saveUsers(users);
+    document.getElementById('resetPasswordMessage').textContent = '✅ Contraseña actualizada.';
+    setTimeout(function() {
+        document.getElementById('resetPasswordMessage').textContent = '';
+    }, 3000);
+}
+
+// ===== Resto de funciones de admin.js (creación de códigos, listados, etc.) =====
 
 function handleAdminCreateCode() {
     var type = document.getElementById('adminCodeType').value;
@@ -179,7 +392,6 @@ function handleAdminCreateCode() {
     var grantAdmin = document.getElementById('adminGrantAdmin').checked;
     var duration = document.getElementById('adminPermissionDuration').value;
     var uses = document.getElementById('adminUsesSelect').value;
-    // Obtener licencia según modo
     var license = '';
     if (pluginCheckboxes.length === 1) {
         license = document.getElementById('adminLicenseInput').value.trim();
@@ -193,7 +405,6 @@ function handleAdminCreateCode() {
         return;
     }
 
-    // Si solo un plugin, la licencia es obligatoria
     if (pluginCheckboxes.length === 1 && !license) {
         messageEl.innerHTML = '<span style="color:#f87171;">❌ La licencia es obligatoria cuando seleccionas un solo plugin.</span>';
         return;
@@ -272,7 +483,6 @@ function handleAdminCreateCode() {
         document.getElementById('adminPermissionDurationGroup').style.display = 'none';
         document.getElementById('adminLicenseInput').value = '';
         document.getElementById('adminLicenseInputOptional').value = '';
-        // Actualizar contador
         var event = new Event('change');
         document.querySelectorAll('#adminPluginsCheckboxes input[type="checkbox"]').forEach(function(cb) { cb.dispatchEvent(event); });
         renderAdminCodeList();
@@ -482,3 +692,53 @@ function reopenTicketById(ticketId) {
     toggleTicketDetail(ticketId);
     renderAdminTicketList();
 }
+
+// Estilos adicionales para la gestión de cuentas (se añaden al final del archivo para que se apliquen)
+// Nota: los estilos deben estar en styles.css, pero los añadimos dinámicamente por si acaso
+var style = document.createElement('style');
+style.textContent = `
+    .user-chip {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 60px;
+        padding: 0.4rem 1rem;
+        color: #c8d0e6;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .user-chip:hover {
+        background: rgba(167,139,250,0.12);
+        border-color: rgba(167,139,250,0.2);
+    }
+    .account-search {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .account-search input {
+        flex: 1;
+        min-width: 200px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 60px;
+        padding: 0.6rem 1.2rem;
+        color: #f0f2ff;
+        outline: none;
+    }
+    .account-search input:focus {
+        border-color: #a78bfa;
+    }
+    .account-search .btn-secondary {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 0.6rem 1.2rem;
+        border-radius: 60px;
+        color: #c8d0e6;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .account-search .btn-secondary:hover {
+        background: rgba(255,255,255,0.08);
+    }
+`;
+document.head.appendChild(style);
